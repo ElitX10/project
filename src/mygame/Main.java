@@ -11,6 +11,7 @@ import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
@@ -20,9 +21,11 @@ import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.queue.RenderQueue;
+import com.jme3.scene.CameraNode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
+import com.jme3.scene.control.CameraControl.ControlDirection;
 import com.jme3.scene.shape.Box;
 
 /**
@@ -30,7 +33,7 @@ import com.jme3.scene.shape.Box;
  * Move your Logic into AppStates or Controls
  * @author normenhansen
  */
-public class Main extends SimpleApplication implements ActionListener{
+public class Main extends SimpleApplication{
 
     public static void main(String[] args) {
         Main app = new Main();
@@ -42,6 +45,7 @@ public class Main extends SimpleApplication implements ActionListener{
     private float wheelRadius;
     private float steeringValue = 0;
     private float accelerationValue = 0;
+    private CameraNode camNode;
     
     @Override
     public void simpleInitApp() {
@@ -147,39 +151,48 @@ public class Main extends SimpleApplication implements ActionListener{
         player.addWheel(wheel_bl.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
                 wheelDirection, wheelAxle, 0.2f, wheelRadius, false);
 
-        player.getWheel(2).setFrictionSlip(4);
-        player.getWheel(3).setFrictionSlip(4);
+        player.getWheel(2).setFrictionSlip(8);
+        player.getWheel(3).setFrictionSlip(8);
 
         rootNode.attachChild(carNode);
         getPhysicsSpace().add(player);
+        
+        // camera following the car :
+        flyCam.setEnabled(false);
+        camNode = new CameraNode("Camera Node", cam);
+        camNode.setControlDir(ControlDirection.SpatialToCamera);
+        carNode.attachChild(camNode);
+        camNode.setLocalTranslation(new Vector3f(0, 5, 15));
+        camNode.lookAt(carNode.getLocalTranslation(), Vector3f.UNIT_Y);
+        
     }
 
     private void buildFloor() {
-        Box floor = new Box(100, 0.1f, 100);
-        Geometry floorGeom = new Geometry("floor", floor);
-        Material floorMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        floorMat.setColor("Color", ColorRGBA.Blue);
-        floorGeom.setMaterial(floorMat);
-        Node floorNode = new Node("floorNode");
-        floorNode.setLocalTranslation(0, -2, 2);
-        floorNode.attachChild(floorGeom);
-        rootNode.attachChild(floorNode);
-        
-        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(floorNode);
-        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
-        floorNode.addControl(landscape);
-        getPhysicsSpace().add(landscape);
-        
-//        Spatial gameLevel = assetManager.loadModel("Scenes/myroad.j3o");
-//        gameLevel.scale(2);
-//        Node road = new Node("landscape");
-//        road.attachChild(gameLevel);
-//        rootNode.attachChild(road);
+//        Box floor = new Box(100, 0.1f, 100);
+//        Geometry floorGeom = new Geometry("floor", floor);
+//        Material floorMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+//        floorMat.setColor("Color", ColorRGBA.Blue);
+//        floorGeom.setMaterial(floorMat);
+//        Node floorNode = new Node("floorNode");
+//        floorNode.setLocalTranslation(0, -2, 2);
+//        floorNode.attachChild(floorGeom);
+//        rootNode.attachChild(floorNode);
 //        
-//        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(road);
+//        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(floorNode);
 //        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
-//        road.addControl(landscape);
+//        floorNode.addControl(landscape);
 //        getPhysicsSpace().add(landscape);
+//        
+        Spatial gameLevel = assetManager.loadModel("Scenes/myroad.j3o");
+        gameLevel.scale(2);
+        Node road = new Node("landscape");
+        road.attachChild(gameLevel);
+        rootNode.attachChild(road);
+        
+        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(road);
+        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
+        road.addControl(landscape);
+        getPhysicsSpace().add(landscape);
     }
     
     private void setupKeys() {
@@ -189,71 +202,117 @@ public class Main extends SimpleApplication implements ActionListener{
         inputManager.addMapping("Downs", new KeyTrigger(KeyInput.KEY_J));
 //        inputManager.addMapping("Space", new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping("Reset", new KeyTrigger(KeyInput.KEY_RETURN));
-        inputManager.addListener(this, "Lefts");
-        inputManager.addListener(this, "Rights");
-        inputManager.addListener(this, "Ups");
-        inputManager.addListener(this, "Downs");
+        inputManager.addListener(actionListener, "Lefts");
+        inputManager.addListener(actionListener, "Rights");
+//        inputManager.addListener(analogListener, "Ups");
+        inputManager.addListener(actionListener, "Ups");
+        inputManager.addListener(actionListener, "Downs");
 //        inputManager.addListener(this, "Space");
-        inputManager.addListener(this, "Reset");
+        inputManager.addListener(actionListener, "Reset");
     }
     
-    private boolean stop = false;
-    public void onAction(String binding, boolean value, float tpf) {
-        if (binding.equals("Lefts")) {
-            if (value) {
-                steeringValue += .5f;
-            } else {
-                steeringValue += -.5f;
-            }
-            player.steer(steeringValue);
-        } else if (binding.equals("Rights")) {
-            if (value) {
-                steeringValue += -.5f;
-            } else {
-                steeringValue += .5f;
-            }
-            player.steer(steeringValue);
-        } //note that our fancy car actually goes backwards..
-        else if (binding.equals("Ups")) {
-            if (value) {
-                accelerationValue -= 800;
-            } else {
-                accelerationValue += 800;
-            }
-            player.accelerate(accelerationValue);
-            player.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode, "Car")));
-        } else if (binding.equals("Downs")) {
-//            if (value) {
-//                if (player.getCurrentVehicleSpeedKmHour() < 0){
-//                    player.brake(0f);
-//                    System.out.println("mygame.Main.onAction()");
-//                }
-//                accelerationValue += 300;
-//            } else {
-//                accelerationValue -= 300;
+//    private final AnalogListener analogListener = new AnalogListener() {
+//        @Override
+//        public void onAnalog(String name, float value, float tpf) {
+//            if(name.equals("Ups")){
+//                System.out.println(".onAnalog()");
 //            }
-//            player.accelerate(accelerationValue);
-            if (value) {
-                player.brake(30f);
-                System.out.println("true");
-            } else {
-                player.brake(0f);
-                System.out.println("false");
+//        }
+//    };
+    
+    private final ActionListener actionListener = new ActionListener() {
+        private boolean stop = false;
+        private boolean goBack = false;
+        public void onAction(String binding, boolean keyPressed, float tpf) {            
+            if (binding.equals("Lefts")) {
+                if (keyPressed) {
+                    steeringValue += .3f;
+                } else {
+                    steeringValue += -.3f;
+                }
+                player.steer(steeringValue);
+            } else if (binding.equals("Rights")) {
+                if (keyPressed) {
+                    steeringValue += -.3f;
+                } else {
+                    steeringValue += .3f;
+                }
+                player.steer(steeringValue);
+            } //note that our fancy car actually goes backwards..
+            else if (binding.equals("Ups")) {
+                if (keyPressed) {
+                    accelerationValue = - 800;
+                } else {
+                    accelerationValue = 0;
+                }
+//                player.accelerate(accelerationValue);
+//                player.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode, "Car")));
             }
-//            player.brake(accelerationValue);
-        } else if (binding.equals("Reset")) {
-            if (value) {
-                System.out.println("Reset");
-                player.setPhysicsLocation(Vector3f.ZERO);
-                player.setPhysicsRotation(new Matrix3f());
-                player.setLinearVelocity(Vector3f.ZERO);
-                player.setAngularVelocity(Vector3f.ZERO);
-                player.resetSuspension();
-            } else {
+            if (binding.equals("Downs")) {
+    //            if (value) {
+    //                if (player.getCurrentVehicleSpeedKmHour() < 0){
+    //                    player.brake(0f);
+    //                    System.out.println("mygame.Main.onAction()");
+    //                }
+    //                accelerationValue += 300;
+    //            } else {
+    //                accelerationValue -= 300;
+    //            }
+    //            player.accelerate(accelerationValue);
+                if (keyPressed) {
+                    stop = true;
+                    if (player.getCurrentVehicleSpeedKmHour() <= 0.2f && player.getCurrentVehicleSpeedKmHour() >= -0.2f){
+                        goBack = true;
+                        accelerationValue = 300;
+                        
+                    }
+//                    player.brake(30f);
+//                    System.out.println("true");
+                } else {
+                    stop = false;
+                    goBack = false;
+//                    player.brake(0f);
+//                    System.out.println("false");
+                }
+    //            player.brake(accelerationValue);
+            } else if (binding.equals("Reset")) {
+                if (keyPressed) {
+                    System.out.println("Reset");
+                    player.setPhysicsLocation(Vector3f.ZERO);
+                    player.setPhysicsRotation(new Matrix3f());
+                    player.setLinearVelocity(Vector3f.ZERO);
+                    player.setAngularVelocity(Vector3f.ZERO);
+                    player.resetSuspension();
+                } else {
+                }
             }
-        }
-        if (!value){
-            player.brake(5f);
-        }
-    }
+            
+            if (keyPressed){
+                if (goBack){
+                    if (stop){
+                        player.brake(0f); 
+//                        accelerationValue = 0;
+                        player.accelerate(accelerationValue);
+                    }else{
+                        player.brake(0f);
+                        accelerationValue = 0;
+                        player.accelerate(accelerationValue);
+                    }
+                } else {
+                    if (stop){
+                        player.brake(30f); 
+                        accelerationValue = 0;
+                        player.accelerate(accelerationValue);
+                    }else{
+                        player.brake(0f);
+                        player.accelerate(accelerationValue);
+                    }
+                }
+                
+                
+            }else {
+                player.brake(5f);
+            }
+        }  
+    };    
 }
