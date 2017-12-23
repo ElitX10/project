@@ -1,6 +1,7 @@
 package mygame;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.audio.AudioNode;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.PhysicsSpace;
@@ -9,6 +10,9 @@ import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.cinematic.MotionPath;
+import com.jme3.cinematic.MotionPathListener;
+import com.jme3.cinematic.events.MotionEvent;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.AnalogListener;
@@ -18,6 +22,7 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.queue.RenderQueue;
@@ -46,6 +51,11 @@ public class Main extends SimpleApplication{
     private float steeringValue = 0;
     private float accelerationValue = 0;
     private CameraNode camNode;
+    private MotionPath path;
+    private MotionEvent motionControl;
+    private AudioNode accelerationSoundNode;
+    private AudioNode StartSoundNode;
+    private AudioNode StopSoundNode;
     
     @Override
     public void simpleInitApp() {
@@ -54,6 +64,7 @@ public class Main extends SimpleApplication{
         buildPlayer();
         buildFloor();
         setupKeys();
+        movingAnimal();
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
         rootNode.addLight(dl);
@@ -165,6 +176,32 @@ public class Main extends SimpleApplication{
         camNode.setLocalTranslation(new Vector3f(0, 5, 15));
         camNode.lookAt(carNode.getLocalTranslation(), Vector3f.UNIT_Y);
         
+        // car sound :
+        AudioNode engineNoiseNode = new AudioNode(assetManager, "Sounds/engineNoise.ogg");
+        engineNoiseNode.setPositional(true);
+        engineNoiseNode.setLooping(true);
+        engineNoiseNode.setVolume(0.4f);
+        carNode.attachChild(engineNoiseNode);
+        engineNoiseNode.play();
+        
+        accelerationSoundNode = new AudioNode(assetManager, "Sounds/acceleration.ogg");
+        accelerationSoundNode.setPositional(true);
+        accelerationSoundNode.setLooping(false);
+        accelerationSoundNode.setVolume(0.3f);
+        carNode.attachChild(accelerationSoundNode);
+        
+        StartSoundNode = new AudioNode(assetManager, "Sounds/Start.ogg");
+        StartSoundNode.setPositional(true);
+        StartSoundNode.setLooping(false);
+        StartSoundNode.setVolume(0.3f);
+        carNode.attachChild(StartSoundNode);
+        
+        StopSoundNode = new AudioNode(assetManager, "Sounds/stoping.ogg");
+        StopSoundNode.setPositional(true);
+        StopSoundNode.setLooping(false);
+        StopSoundNode.setVolume(0.3f);
+        carNode.attachChild(StopSoundNode);
+        
     }
 
     private void buildFloor() {
@@ -223,6 +260,7 @@ public class Main extends SimpleApplication{
     private final ActionListener actionListener = new ActionListener() {
         private boolean stop = false;
         private boolean goBack = false;
+        
         public void onAction(String binding, boolean keyPressed, float tpf) {            
             if (binding.equals("Lefts")) {
                 if (keyPressed) {
@@ -242,8 +280,17 @@ public class Main extends SimpleApplication{
             else if (binding.equals("Ups")) {
                 if (keyPressed) {
                     accelerationValue = - 800;
+                    if (player.getCurrentVehicleSpeedKmHour() <= 0.2f && player.getCurrentVehicleSpeedKmHour() >= -0.2f){
+                        StartSoundNode.play();
+                    }else{
+                        accelerationSoundNode.play();  
+                    }                    
+                    StopSoundNode.stop();
                 } else {
                     accelerationValue = 0;
+                    accelerationSoundNode.stop();
+                    StartSoundNode.stop();                    
+                    StopSoundNode.play();
                 }
 //                player.accelerate(accelerationValue);
 //                player.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode, "Car")));
@@ -314,5 +361,53 @@ public class Main extends SimpleApplication{
                 player.brake(5f);
             }
         }  
-    };    
+    }; 
+    
+    private void movingAnimal(){
+        // create the animal :
+        Box animal = new Box(1, 1, 1);
+        Geometry animalGeom = new Geometry("animal", animal);
+        Material animalMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        animalGeom.setMaterial(animalMat);
+        Node animalNode = new Node();
+        animalNode.attachChild(animalGeom);
+        rootNode.attachChild(animalNode);
+        
+//        Spatial teapot = assetManager.loadModel("Models/Teapot/Teapot.obj");
+//        teapot.setName("Teapot");
+//        teapot.setLocalScale(3);
+//        teapot.setMaterial(animalMat);
+//        rootNode.attachChild(teapot);
+        
+        // create the path :
+        path = new MotionPath();
+        path.addWayPoint(new Vector3f(10, 3, 0));
+        path.addWayPoint(new Vector3f(10, 3, 10));
+        path.addWayPoint(new Vector3f(-40, 3, 10));
+        path.addWayPoint(new Vector3f(-40, 3, 0));
+        path.addWayPoint(new Vector3f(-40, 8, 0));
+        path.addWayPoint(new Vector3f(10, 8, 0));
+        path.addWayPoint(new Vector3f(10, 8, 10));
+        path.addWayPoint(new Vector3f(15, 8, 10));
+        path.enableDebugShape(assetManager, rootNode);
+        
+        motionControl = new MotionEvent(animalNode,path);
+        motionControl.setDirectionType(MotionEvent.Direction.PathAndRotation);
+        motionControl.setRotation(new Quaternion().fromAngleNormalAxis(-FastMath.HALF_PI, Vector3f.UNIT_Y));
+        motionControl.setInitialDuration(10f);
+        motionControl.setSpeed(2f); 
+//        motionControl.play(); to start the animation :
+        
+//        path.addListener(new MotionPathListener() {
+//
+//            public void onWayPointReach(MotionEvent control, int wayPointIndex) {
+//                if (path.getNbWayPoints() == wayPointIndex + 1) {
+////                    wayPointsText.setText(control.getSpatial().getName() + "Finished!!! ");
+//                } else {
+////                    wayPointsText.setText(control.getSpatial().getName() + " Reached way point " + wayPointIndex);
+//                }
+////                wayPointsText.setLocalTranslation((cam.getWidth() - wayPointsText.getLineWidth()) / 2, cam.getHeight(), 0);
+//            }
+//        });
+    }
 }
