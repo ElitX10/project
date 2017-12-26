@@ -32,6 +32,7 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.CameraControl.ControlDirection;
 import com.jme3.scene.shape.Box;
+import java.util.Random;
 
 /**
  * This is the Main Class of your Game. You should only do initialization here.
@@ -56,6 +57,9 @@ public class Main extends SimpleApplication{
     private AudioNode accelerationSoundNode;
     private AudioNode StartSoundNode;
     private AudioNode StopSoundNode;
+    private final Random myRand = new Random();
+    private int randomTimerDelay = myRand.nextInt((60 - 20) + 1) + 20;
+    private float randomTimer = 0;
     
     @Override
     public void simpleInitApp() {
@@ -71,11 +75,13 @@ public class Main extends SimpleApplication{
 
         dl = new DirectionalLight();
         dl.setDirection(new Vector3f(0.5f, -0.1f, 0.3f).normalizeLocal());
+        motionControl.play();
     }
 
     @Override
     public void simpleUpdate(float tpf) {
         //TODO: add update code
+        randomTimingForAnimal(tpf);
     }
 
     @Override
@@ -162,8 +168,8 @@ public class Main extends SimpleApplication{
         player.addWheel(wheel_bl.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
                 wheelDirection, wheelAxle, 0.2f, wheelRadius, false);
 
-        player.getWheel(2).setFrictionSlip(8);
-        player.getWheel(3).setFrictionSlip(8);
+        player.getWheel(2).setFrictionSlip(9);
+        player.getWheel(3).setFrictionSlip(9);
 
         rootNode.attachChild(carNode);
         getPhysicsSpace().add(player);
@@ -202,6 +208,11 @@ public class Main extends SimpleApplication{
         StopSoundNode.setVolume(0.3f);
         carNode.attachChild(StopSoundNode);
         
+        player.setPhysicsLocation(new Vector3f(100, 2, 0));
+//        System.out.println("mygame.Main.buildPlayer()" + player.getPhysicsRotationMatrix());
+        player.setPhysicsRotation(new Matrix3f( 0, 0, 1,
+                                                0, 1, 0, 
+                                                -1, 0, 0));
     }
 
     private void buildFloor() {
@@ -220,16 +231,17 @@ public class Main extends SimpleApplication{
 //        floorNode.addControl(landscape);
 //        getPhysicsSpace().add(landscape);
 //        
-        Spatial gameLevel = assetManager.loadModel("Scenes/myroad.j3o");
-        gameLevel.scale(2);
+        Spatial gameLevel = assetManager.loadModel("Scenes/Road.j3o");
+        gameLevel.scale(3);
         Node road = new Node("landscape");
+        road.setLocalTranslation(-50,0,-80);
         road.attachChild(gameLevel);
         rootNode.attachChild(road);
         
-        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(road);
-        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
-        road.addControl(landscape);
-        getPhysicsSpace().add(landscape);
+        CollisionShape sceneShape2 = CollisionShapeFactory.createMeshShape(road);
+        RigidBodyControl landscape2 = new RigidBodyControl(sceneShape2, 0);
+        road.addControl(landscape2);
+        getPhysicsSpace().add(landscape2);
     }
     
     private void setupKeys() {
@@ -264,16 +276,16 @@ public class Main extends SimpleApplication{
         public void onAction(String binding, boolean keyPressed, float tpf) {            
             if (binding.equals("Lefts")) {
                 if (keyPressed) {
-                    steeringValue += .3f;
+                    steeringValue += .15f;
                 } else {
-                    steeringValue += -.3f;
+                    steeringValue += -.15f;
                 }
                 player.steer(steeringValue);
             } else if (binding.equals("Rights")) {
                 if (keyPressed) {
-                    steeringValue += -.3f;
+                    steeringValue += -.15f;
                 } else {
-                    steeringValue += .3f;
+                    steeringValue += .15f;
                 }
                 player.steer(steeringValue);
             } //note that our fancy car actually goes backwards..
@@ -292,36 +304,21 @@ public class Main extends SimpleApplication{
                     StartSoundNode.stop();                    
                     StopSoundNode.play();
                 }
-//                player.accelerate(accelerationValue);
-//                player.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode, "Car")));
             }
             if (binding.equals("Downs")) {
-    //            if (value) {
-    //                if (player.getCurrentVehicleSpeedKmHour() < 0){
-    //                    player.brake(0f);
-    //                    System.out.println("mygame.Main.onAction()");
-    //                }
-    //                accelerationValue += 300;
-    //            } else {
-    //                accelerationValue -= 300;
-    //            }
-    //            player.accelerate(accelerationValue);
                 if (keyPressed) {
                     stop = true;
                     if (player.getCurrentVehicleSpeedKmHour() <= 0.2f && player.getCurrentVehicleSpeedKmHour() >= -0.2f){
                         goBack = true;
                         accelerationValue = 300;
-                        
+                        stop = false;
                     }
-//                    player.brake(30f);
-//                    System.out.println("true");
                 } else {
+                    accelerationValue = 0;
+                    player.accelerate(accelerationValue);
                     stop = false;
                     goBack = false;
-//                    player.brake(0f);
-//                    System.out.println("false");
                 }
-    //            player.brake(accelerationValue);
             } else if (binding.equals("Reset")) {
                 if (keyPressed) {
                     System.out.println("Reset");
@@ -335,16 +332,9 @@ public class Main extends SimpleApplication{
             }
             
             if (keyPressed){
-                if (goBack){
-                    if (stop){
-                        player.brake(0f); 
-//                        accelerationValue = 0;
-                        player.accelerate(accelerationValue);
-                    }else{
-                        player.brake(0f);
-                        accelerationValue = 0;
-                        player.accelerate(accelerationValue);
-                    }
+                if (goBack){                        
+                    player.brake(0f);
+                    player.accelerate(accelerationValue);
                 } else {
                     if (stop){
                         player.brake(30f); 
@@ -364,15 +354,21 @@ public class Main extends SimpleApplication{
     }; 
     
     private void movingAnimal(){
-        // create the animal :
-        Box animal = new Box(1, 1, 1);
-        Geometry animalGeom = new Geometry("animal", animal);
-        Material animalMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        animalGeom.setMaterial(animalMat);
-        Node animalNode = new Node();
-        animalNode.attachChild(animalGeom);
-        rootNode.attachChild(animalNode);
+        final int X_GlobalPosition = 50;
+        final int Y_GlobalPosition = 0;
+        final int Z_GlobalPosition = -5;
         
+        // create the animal :
+        Spatial animal = assetManager.loadModel("Models/Wolf.j3o");
+//        Box animal = new Box(1, 1, 1);
+//        Geometry animalGeom = new Geometry("animal", animal);
+        Material animalMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        animalMat.setColor("Color", ColorRGBA.Black);
+        animal.setMaterial(animalMat);
+        Node animalNode = new Node();
+        animalNode.attachChild(animal);
+        rootNode.attachChild(animalNode);
+        animal.rotate(0, 90, 0);
 //        Spatial teapot = assetManager.loadModel("Models/Teapot/Teapot.obj");
 //        teapot.setName("Teapot");
 //        teapot.setLocalScale(3);
@@ -381,21 +377,31 @@ public class Main extends SimpleApplication{
         
         // create the path :
         path = new MotionPath();
-        path.addWayPoint(new Vector3f(10, 3, 0));
-        path.addWayPoint(new Vector3f(10, 3, 10));
-        path.addWayPoint(new Vector3f(-40, 3, 10));
-        path.addWayPoint(new Vector3f(-40, 3, 0));
-        path.addWayPoint(new Vector3f(-40, 8, 0));
-        path.addWayPoint(new Vector3f(10, 8, 0));
-        path.addWayPoint(new Vector3f(10, 8, 10));
-        path.addWayPoint(new Vector3f(15, 8, 10));
+        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
+        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition - 35));
+        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition - 15));
+        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 10));
+        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition + 5));
+        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition + 10));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 0, Y_GlobalPosition + 3, Z_GlobalPosition + 30));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 0, Y_GlobalPosition + 0, Z_GlobalPosition + 40));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition + 40));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition + 30));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition + 10));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition + 5));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition - 10));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition - 15));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition - 35));
+        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
+        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
         path.enableDebugShape(assetManager, rootNode);
+        path.setCurveTension(0.25f);
         
         motionControl = new MotionEvent(animalNode,path);
         motionControl.setDirectionType(MotionEvent.Direction.PathAndRotation);
         motionControl.setRotation(new Quaternion().fromAngleNormalAxis(-FastMath.HALF_PI, Vector3f.UNIT_Y));
-        motionControl.setInitialDuration(10f);
-        motionControl.setSpeed(2f); 
+        motionControl.setInitialDuration(20f);
+        motionControl.setSpeed(1f); 
 //        motionControl.play(); to start the animation :
         
 //        path.addListener(new MotionPathListener() {
@@ -409,5 +415,15 @@ public class Main extends SimpleApplication{
 ////                wayPointsText.setLocalTranslation((cam.getWidth() - wayPointsText.getLineWidth()) / 2, cam.getHeight(), 0);
 //            }
 //        });
+    }
+
+    private void randomTimingForAnimal(float tpf) {
+        randomTimer += tpf;
+        if (randomTimer >= randomTimerDelay){
+            motionControl.play();
+            randomTimer = 0;
+            randomTimerDelay = myRand.nextInt((60 - 20) + 1) + 20;
+//            System.out.println("mygame.Main.randomTimingForAnimal() "+ randomTimerDelay);
+        }
     }
 }
