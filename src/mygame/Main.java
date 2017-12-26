@@ -7,6 +7,8 @@ import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.PhysicsSpace;
 import static com.jme3.bullet.PhysicsSpace.getPhysicsSpace;
 import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.collision.shapes.HullCollisionShape;
+import com.jme3.bullet.collision.shapes.MeshCollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
@@ -75,7 +77,7 @@ public class Main extends SimpleApplication{
 
         dl = new DirectionalLight();
         dl.setDirection(new Vector3f(0.5f, -0.1f, 0.3f).normalizeLocal());
-        motionControl.play();
+//        motionControl.play();
     }
 
     @Override
@@ -186,7 +188,7 @@ public class Main extends SimpleApplication{
         AudioNode engineNoiseNode = new AudioNode(assetManager, "Sounds/engineNoise.ogg");
         engineNoiseNode.setPositional(true);
         engineNoiseNode.setLooping(true);
-        engineNoiseNode.setVolume(0.4f);
+        engineNoiseNode.setVolume(0.1f);
         carNode.attachChild(engineNoiseNode);
         engineNoiseNode.play();
         
@@ -367,60 +369,49 @@ public class Main extends SimpleApplication{
         animal.setMaterial(animalMat);
         Node animalNode = new Node();
         animalNode.attachChild(animal);
+        animalNode.setLocalTranslation(0, 2, 0);
         rootNode.attachChild(animalNode);
         animal.rotate(0, 90, 0);
-//        Spatial teapot = assetManager.loadModel("Models/Teapot/Teapot.obj");
-//        teapot.setName("Teapot");
-//        teapot.setLocalScale(3);
-//        teapot.setMaterial(animalMat);
-//        rootNode.attachChild(teapot);
+//        CollisionShape animalShape = CollisionShapeFactory.createMeshShape(animalNode);
+//        MeshCollisionShape animalShape = new MeshCollisionShape(animal.getMesh());
+        RigidBodyControl wolf = new RigidBodyControl(500);
+        animalNode.addControl(wolf);
+        getPhysicsSpace().add(wolf);
         
-        // create the path :
-        path = new MotionPath();
-        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
-        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition - 35));
-        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition - 15));
-        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 10));
-        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition + 5));
-        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition + 10));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 0, Y_GlobalPosition + 3, Z_GlobalPosition + 30));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 0, Y_GlobalPosition + 0, Z_GlobalPosition + 40));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition + 40));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition + 30));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition + 10));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition + 5));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition - 10));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition - 15));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition - 35));
-        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
-        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
-        path.enableDebugShape(assetManager, rootNode);
-        path.setCurveTension(0.25f);
-        
-        motionControl = new MotionEvent(animalNode,path);
-        motionControl.setDirectionType(MotionEvent.Direction.PathAndRotation);
-        motionControl.setRotation(new Quaternion().fromAngleNormalAxis(-FastMath.HALF_PI, Vector3f.UNIT_Y));
-        motionControl.setInitialDuration(20f);
-        motionControl.setSpeed(1f); 
-//        motionControl.play(); to start the animation :
-        
-//        path.addListener(new MotionPathListener() {
-//
-//            public void onWayPointReach(MotionEvent control, int wayPointIndex) {
-//                if (path.getNbWayPoints() == wayPointIndex + 1) {
-////                    wayPointsText.setText(control.getSpatial().getName() + "Finished!!! ");
-//                } else {
-////                    wayPointsText.setText(control.getSpatial().getName() + " Reached way point " + wayPointIndex);
-//                }
-////                wayPointsText.setLocalTranslation((cam.getWidth() - wayPointsText.getLineWidth()) / 2, cam.getHeight(), 0);
-//            }
-//        });
+//        // create the path :
+//        path = new MotionPath();
+//        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition - 35));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition - 15));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 10));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition + 5));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 3, Z_GlobalPosition + 10));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 0, Y_GlobalPosition + 3, Z_GlobalPosition + 30));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 0, Y_GlobalPosition + 0, Z_GlobalPosition + 40));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition + 40));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition + 30));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition + 10));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition + 5));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition - 10));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition - 15));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 3, Z_GlobalPosition - 35));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition - 40, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
+//        path.addWayPoint(new Vector3f(X_GlobalPosition + 0, Y_GlobalPosition + 0, Z_GlobalPosition - 45));
+//        path.enableDebugShape(assetManager, rootNode);
+//        path.setCurveTension(0.25f);
+//        
+//        motionControl = new MotionEvent(animalNode,path);
+//        motionControl.setDirectionType(MotionEvent.Direction.PathAndRotation);
+//        motionControl.setRotation(new Quaternion().fromAngleNormalAxis(-FastMath.HALF_PI, Vector3f.UNIT_Y));
+//        motionControl.setInitialDuration(20f);
+//        motionControl.setSpeed(1f);
+//        motionControl.play(); to start the animation :        
     }
 
     private void randomTimingForAnimal(float tpf) {
         randomTimer += tpf;
         if (randomTimer >= randomTimerDelay){
-            motionControl.play();
+//            motionControl.play();
             randomTimer = 0;
             randomTimerDelay = myRand.nextInt((60 - 20) + 1) + 20;
 //            System.out.println("mygame.Main.randomTimingForAnimal() "+ randomTimerDelay);
