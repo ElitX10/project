@@ -13,8 +13,10 @@ import com.jme3.bounding.BoundingBox;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.light.DirectionalLight;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
@@ -40,6 +42,31 @@ public class Globals {
     // register all message types there are
     public static void initialiseSerializables() {
 //        Serializer.registerClass(TimeMessage.class);
+    }
+    
+    public void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
+        
+        // create the road :
+        Spatial gameLevel = myApp.getAssetManager().loadModel("Scenes/Road.j3o");
+        gameLevel.scale(3);
+        Node road = new Node("landscape");
+        road.setLocalTranslation(-50,0,-80);
+        road.attachChild(gameLevel);
+        GameNode.attachChild(road);
+        
+        CollisionShape sceneShape2 = CollisionShapeFactory.createMeshShape(road);
+        RigidBodyControl landscape2 = new RigidBodyControl(sceneShape2, 0);
+        road.addControl(landscape2);
+        bulletAppState.getPhysicsSpace().add(landscape2);
+        
+        // create the sky : 
+        // TODO !!
+        // add some trees and rocks :
+        // TODO !!
+        // add light : 
+        DirectionalLight dl = new DirectionalLight();
+        dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
+        GameNode.addLight(dl);
     }
 }
 
@@ -85,8 +112,8 @@ class Player extends BaseAppState{
     private float wheelRadius;
     private final SimpleApplication myApp;
     private AudioNode accelerationSoundNode;
-    private AudioNode StartSoundNode;
-    private AudioNode StopSoundNode;
+    private AudioNode startSoundNode;
+    private AudioNode stopSoundNode;
     private CameraNode camNode;
     private final Node NODE_GAME;
     private final BulletAppState myBulletAppState;
@@ -94,7 +121,7 @@ class Player extends BaseAppState{
     
     private static int numberOfPlayer = 0;
     
-    public Player(SimpleApplication app, Node gameNode,BulletAppState bulletAppState){
+    public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState){
         myApp = app;
         NODE_GAME = gameNode;
         myBulletAppState = bulletAppState;
@@ -104,7 +131,7 @@ class Player extends BaseAppState{
         
         // give an id to every player to separate input later and for displaying the score on the sceen for each player :
         this.ID = numberOfPlayer;
-    }
+    }  
     
     public static void resetNumberOfPlayer(){
         numberOfPlayer = 0;
@@ -224,17 +251,17 @@ class Player extends BaseAppState{
         accelerationSoundNode.setVolume(0.3f);
         carNode.attachChild(accelerationSoundNode);
         
-        StartSoundNode = new AudioNode(myApp.getAssetManager(), "Sounds/Start.ogg");
-        StartSoundNode.setPositional(true);
-        StartSoundNode.setLooping(false);
-        StartSoundNode.setVolume(0.3f);
-        carNode.attachChild(StartSoundNode);
+        startSoundNode = new AudioNode(myApp.getAssetManager(), "Sounds/Start.ogg");
+        startSoundNode.setPositional(true);
+        startSoundNode.setLooping(false);
+        startSoundNode.setVolume(0.3f);
+        carNode.attachChild(startSoundNode);
         
-        StopSoundNode = new AudioNode(myApp.getAssetManager(), "Sounds/stoping.ogg");
-        StopSoundNode.setPositional(true);
-        StopSoundNode.setLooping(false);
-        StopSoundNode.setVolume(0.3f);
-        carNode.attachChild(StopSoundNode);        
+        stopSoundNode = new AudioNode(myApp.getAssetManager(), "Sounds/stoping.ogg");
+        stopSoundNode.setPositional(true);
+        stopSoundNode.setLooping(false);
+        stopSoundNode.setVolume(0.3f);
+        carNode.attachChild(stopSoundNode);        
     }
     
     private Geometry findGeom(Spatial spatial, String name) {
@@ -257,6 +284,66 @@ class Player extends BaseAppState{
     
     private PhysicsSpace getPhysicsSpace() {
         return myBulletAppState.getPhysicsSpace();
+    }
+
+    public float getCurrentVehicleSpeedKmHour(){
+        return player.getCurrentVehicleSpeedKmHour();
+    }
+    
+    public void accelerate(float accelerationValue) {
+        player.accelerate(accelerationValue);
+    }
+
+    public void steer(float steeringValue) {
+        player.steer(steeringValue);
+    }
+
+    public void setPhysicsLocation(Vector3f newLocation) {
+        player.setPhysicsLocation(newLocation);
+    }
+
+    public void setPhysicsRotation(Matrix3f newRotation) {
+        player.setPhysicsRotation(newRotation);
+    }
+
+    public void setAngularVelocity(Vector3f newAngularVelocity) {
+        player.setAngularVelocity(newAngularVelocity);
+    }
+
+    public void setLinearVelocity(Vector3f newLinearVelocity) {
+        player.setLinearVelocity(newLinearVelocity);
+    }
+
+    public void resetSuspension() {
+        player.resetSuspension();
+    }
+
+    public void brake(float f) {
+        player.brake(f);
+    }
+    
+    public void playStartSoundNode() {
+        startSoundNode.play();
+    }
+
+    public void playAccelerationSoundNode() {
+        accelerationSoundNode.play(); 
+    }
+
+    public void stopStopSoundNode() {
+        stopSoundNode.stop();
+    }
+
+    void stopAccelerationSoundNode() {
+        accelerationSoundNode.stop();
+    }
+
+    void stopStartSoundNode() {
+        startSoundNode.stop();
+    }
+
+    void PlayStopSoundNode() {
+        stopSoundNode.play();
     }
 }
 

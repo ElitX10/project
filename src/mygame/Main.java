@@ -76,8 +76,8 @@ public class Main extends SimpleApplication{
         dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
         rootNode.addLight(dl);
 
-        dl = new DirectionalLight();
-        dl.setDirection(new Vector3f(0.5f, -0.1f, 0.3f).normalizeLocal());
+//        dl = new DirectionalLight();
+//        dl.setDirection(new Vector3f(0.5f, -0.1f, 0.3f).normalizeLocal());
 //        motionControl.play();
     }
 
