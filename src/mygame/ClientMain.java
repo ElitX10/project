@@ -21,8 +21,8 @@ import java.io.IOException;
 public class ClientMain extends SimpleApplication implements ClientStateListener{
 
     private Client myClient;
-    private Globals myGlobals = new Globals();;
-    private Node NODE_GAME = new Node("NODE_GAME");;
+    private Globals myGlobals = new Globals();
+    private Node NODE_GAME = new Node("NODE_GAME");
     public ClientMain(){
         
     }
@@ -64,7 +64,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
 //                                    TimeMessage.class);
 
         //node containing all the other new node on the game :
-        rootNode.attachChild(NODE_GAME);
+        rootNode.attachChild(NODE_GAME);        
     }
 
     // to ensure to close the net connection cleanly :

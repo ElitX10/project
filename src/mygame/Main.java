@@ -66,6 +66,7 @@ public class Main extends SimpleApplication{
     @Override
     public void simpleInitApp() {
         bulletAppState = new BulletAppState();
+        bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
         stateManager.attach(bulletAppState);
         buildPlayer();
         buildFloor();
@@ -210,7 +211,10 @@ public class Main extends SimpleApplication{
         StopSoundNode.setVolume(0.3f);
         carNode.attachChild(StopSoundNode);
         
-        player.setPhysicsLocation(new Vector3f(100, 2, 0));
+//        player.setPhysicsLocation(new Vector3f(110, 1, -1.5f));
+//        player.setPhysicsLocation(new Vector3f(110, 1, -13.5f));
+//        player.setPhysicsLocation(new Vector3f(126, 1, -1.5f));
+        player.setPhysicsLocation(new Vector3f(126, 1, -13.5f));
 //        System.out.println("mygame.Main.buildPlayer()" + player.getPhysicsRotationMatrix());
         player.setPhysicsRotation(new Matrix3f( 0, 0, 1,
                                                 0, 1, 0, 
