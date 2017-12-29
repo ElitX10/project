@@ -17,6 +17,8 @@ import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
@@ -27,6 +29,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.CameraControl.ControlDirection;
+import java.util.Random;
 
 /**
  *
@@ -349,18 +352,68 @@ class Player extends BaseAppState{
 
 //-------------------------------------------------WOLF---------------------------------------------------------------------------------------
 class Wolf extends BaseAppState{
-    private int GlobleXPosition = 0;
-    private int GlobleYPosition = 0;
-    private int GlobleZPosition = 0;
+    private float X_Position = 0;
+    private float Y_Position = 0;
+    private float Z_Position = -45;
+    private final int X_GlobalPosition = 50;
+    private final int Y_GlobalPosition = 0;
+    private final int Z_GlobalPosition = -5;
+    private final SimpleApplication myApp;
+    private final Node GameNode;
+    private Spatial animal;
+    private Node animalNode;
+    private int X_Path[] = {0,0,0,0,0,0,0,0,-40,-40,-40,-40,-40,-40,-40,-40,0};
+    private int Y_Path[] = {0,3,3,0,0,3,3,0,0,3,3,0,0,3,3,0,0};
+    private int Z_Path[] = {-45,-35,-15,-10,5,10,30,40,40,30,10,5,-10,-15,-35,-45,-45};
+    private int pathIndex = 0;
+    private float globalSpeed = 8;
+    private float X_Speed;
+    private float Y_Speed;
+    private float Z_Speed;
+    private double distance;
+    private float timeToNextStep;
+    private final Random myRand = new Random();
+    private int randomTimerDelay = myRand.nextInt((60 - 25) + 1) + 25;
+    private float randomTimer = 0;
+    private boolean move = false;
+    
+    public Wolf(SimpleApplication app, Node gameNode){
+        myApp = app;
+        GameNode = gameNode;
+    }
     
     @Override
     protected void initialize(Application app) {
-        
+        createWolf();
+        // init values :
+        setParameter(pathIndex);
+        GameNode.attachChild(animalNode); 
+        animal.setLocalTranslation(X_Position, Y_Position, Z_Position);
     }
 
     @Override
-    public void update(float tpf) {
-
+    public void update(float tpf) {        
+        if(!move){
+            randomTimingForAnimal(tpf);
+        } else{
+            if (getCondition()){
+                X_Position += X_Speed * tpf;
+                Y_Position += Y_Speed * tpf;
+                Z_Position += Z_Speed * tpf;
+                animal.setLocalTranslation(X_Position, Y_Position, Z_Position);            
+            } else{
+                pathIndex++;
+    //            System.out.println(pathIndex -1 +"mygame.Wolf.update()" + X_Position + " "+  Y_Position +" "+  Z_Position);
+                X_Position = X_Path[pathIndex];
+                Y_Position = Y_Path[pathIndex];
+                Z_Position = Z_Path[pathIndex];            
+                if(pathIndex == 16){
+                    pathIndex = 0;
+                    move = false;
+                }
+                setParameter(pathIndex);
+            }
+        }
     }
     
     @Override
@@ -375,6 +428,69 @@ class Wolf extends BaseAppState{
 
     @Override
     protected void onDisable() {
-        
+        // TODO : reset some values (maybe ???)
     }    
+
+    private void createWolf() {
+        animal = myApp.getAssetManager().loadModel("Models/Wolf.j3o");
+        Material animalMat = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        animalMat.setColor("Color", ColorRGBA.Black);
+        animal.setMaterial(animalMat);
+        animalNode = new Node();
+        animalNode.attachChild(animal);
+        animalNode.setLocalTranslation(X_GlobalPosition, Y_GlobalPosition, Z_GlobalPosition);
+        
+        //TODO : Collision stuff
+    }
+    
+    private void setParameter(int pathIndex){
+        distance = Math.sqrt(Math.pow(X_Path[pathIndex + 1] - X_Path[pathIndex], 2) + 
+                            Math.pow(Y_Path[pathIndex + 1] - Y_Path[pathIndex], 2) + 
+                            Math.pow(Z_Path[pathIndex + 1] - Z_Path[pathIndex], 2));
+        timeToNextStep = (float) (distance / globalSpeed);
+        X_Speed = (X_Path[pathIndex + 1] - X_Path[pathIndex]) / timeToNextStep;
+        Y_Speed = (Y_Path[pathIndex + 1] - Y_Path[pathIndex]) / timeToNextStep;
+        Z_Speed = (Z_Path[pathIndex + 1] - Z_Path[pathIndex]) / timeToNextStep;
+//        System.out.println(X_Speed + " mygame.Wolf.initialize()" + Y_Speed + " " + Z_Speed);
+    }
+    
+    private boolean getCondition(){
+        if (pathIndex < 7){
+            if(Z_Position < Z_Path[pathIndex + 1]){
+                return true;
+            }else{
+                return false;
+            }
+        } else if (pathIndex == 7){
+            if(X_Position > X_Path[pathIndex + 1]){
+                return true;
+            }else{
+                return false;
+            }            
+        } else if (pathIndex < 15){
+            if(Z_Position > Z_Path[pathIndex + 1]){
+                return true;
+            }else{
+                return false;
+            }
+        } else if(pathIndex == 15){
+            if(X_Position < X_Path[pathIndex + 1]){
+                return true;
+            }else{
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    
+    private void randomTimingForAnimal(float tpf) {
+        randomTimer += tpf;
+        System.out.println("time : " + randomTimer +" less than " + randomTimerDelay + " tpf : " + tpf);
+        if (randomTimer >= randomTimerDelay){
+            move = true;
+            randomTimer = 0;
+            randomTimerDelay = myRand.nextInt((60 - 25) + 1) + 25;
+        }
+    }
 }

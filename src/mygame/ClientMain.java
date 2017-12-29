@@ -20,6 +20,7 @@ import com.jme3.network.MessageListener;
 import com.jme3.network.Network;
 import com.jme3.scene.Node;
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  *
@@ -33,10 +34,14 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     private BulletAppState bulletAppState;
     private float steeringValue = 0;
     private float accelerationValue = 0;
+    private int controlledPlayerID = 0; // TODO : set this depending of the information of the server !
     //app state : 
-    private Player TestingPlayer; //TODO : array list of player
+    private ArrayList<Player> PlayerStore = new ArrayList<Player>();
+    private Wolf movingWolf = new Wolf(this, NODE_GAME);;
+    
     public ClientMain(){
-        
+        movingWolf.setEnabled(true);
+        stateManager.attach(movingWolf);
     }
     
     public static void main(String[] args) {
@@ -87,9 +92,10 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         myGlobals.createScene(NODE_GAME, this, bulletAppState);
         
         // create a player for testing :
-        TestingPlayer = new Player(this, NODE_GAME, bulletAppState);
+        Player TestingPlayer = new Player(this, NODE_GAME, bulletAppState);       
         stateManager.attach(TestingPlayer);
         TestingPlayer.setEnabled(true);
+        PlayerStore.add(TestingPlayer);
         
         // set up key for controlling the car :
         setupKeys();
@@ -149,75 +155,75 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                 } else {
                     steeringValue += -.15f;
                 }
-                TestingPlayer.steer(steeringValue);
+                PlayerStore.get(controlledPlayerID).steer(steeringValue);
             } else if (binding.equals("Rights")) {
                 if (keyPressed) {
                     steeringValue += -.15f;
                 } else {
                     steeringValue += .15f;
                 }
-                TestingPlayer.steer(steeringValue);
+                PlayerStore.get(controlledPlayerID).steer(steeringValue);
             } //note that our fancy car actually goes backwards..
             else if (binding.equals("Ups")) {
                 if (keyPressed) {
                     accelerationValue = - 800;
-                    if (TestingPlayer.getCurrentVehicleSpeedKmHour() <= 0.2f && TestingPlayer.getCurrentVehicleSpeedKmHour() >= -0.2f){
-                        TestingPlayer.playStartSoundNode();
+                    if (PlayerStore.get(controlledPlayerID).getCurrentVehicleSpeedKmHour() <= 0.2f && PlayerStore.get(controlledPlayerID).getCurrentVehicleSpeedKmHour() >= -0.2f){
+                        PlayerStore.get(controlledPlayerID).playStartSoundNode();
                     }else{
-                        TestingPlayer.playAccelerationSoundNode();  
+                        PlayerStore.get(controlledPlayerID).playAccelerationSoundNode();  
                     }                    
-                    TestingPlayer.stopStopSoundNode();
+                    PlayerStore.get(controlledPlayerID).stopStopSoundNode();
                 } else {
                     accelerationValue = 0;
-                    TestingPlayer.stopAccelerationSoundNode();
-                    TestingPlayer.stopStartSoundNode();                    
-                    TestingPlayer.PlayStopSoundNode();
+                    PlayerStore.get(controlledPlayerID).stopAccelerationSoundNode();
+                    PlayerStore.get(controlledPlayerID).stopStartSoundNode();                    
+                    PlayerStore.get(controlledPlayerID).PlayStopSoundNode();
                 }
             }
             if (binding.equals("Downs")) {
                 if (keyPressed) {
                     stop = true;
-                    if (TestingPlayer.getCurrentVehicleSpeedKmHour() <= 0.2f && TestingPlayer.getCurrentVehicleSpeedKmHour() >= -0.2f){
+                    if (PlayerStore.get(controlledPlayerID).getCurrentVehicleSpeedKmHour() <= 0.2f && PlayerStore.get(controlledPlayerID).getCurrentVehicleSpeedKmHour() >= -0.2f){
                         goBack = true;
                         accelerationValue = 300;
                         stop = false;
                     }
                 } else {
                     accelerationValue = 0;
-                    TestingPlayer.accelerate(accelerationValue);
+                    PlayerStore.get(controlledPlayerID).accelerate(accelerationValue);
                     stop = false;
                     goBack = false;
                 }
             } else if (binding.equals("Reset")) {
                 if (keyPressed) {
                     System.out.println("Reset");
-                    TestingPlayer.setPhysicsLocation(Vector3f.ZERO);
-                    TestingPlayer.setPhysicsRotation(new Matrix3f());
-                    TestingPlayer.setLinearVelocity(Vector3f.ZERO);
-                    TestingPlayer.setAngularVelocity(Vector3f.ZERO);
-                    TestingPlayer.resetSuspension();
+                    PlayerStore.get(controlledPlayerID).setPhysicsLocation(Vector3f.ZERO);
+                    PlayerStore.get(controlledPlayerID).setPhysicsRotation(new Matrix3f());
+                    PlayerStore.get(controlledPlayerID).setLinearVelocity(Vector3f.ZERO);
+                    PlayerStore.get(controlledPlayerID).setAngularVelocity(Vector3f.ZERO);
+                    PlayerStore.get(controlledPlayerID).resetSuspension();
                 } else {
                 }
             }
             
             if (keyPressed){
                 if (goBack){                        
-                    TestingPlayer.brake(0f);
-                    TestingPlayer.accelerate(accelerationValue);
+                    PlayerStore.get(controlledPlayerID).brake(0f);
+                    PlayerStore.get(controlledPlayerID).accelerate(accelerationValue);
                 } else {
                     if (stop){
-                        TestingPlayer.brake(30f); 
+                        PlayerStore.get(controlledPlayerID).brake(30f); 
                         accelerationValue = 0;
-                        TestingPlayer.accelerate(accelerationValue);
+                        PlayerStore.get(controlledPlayerID).accelerate(accelerationValue);
                     }else{
-                        TestingPlayer.brake(0f);
-                        TestingPlayer.accelerate(accelerationValue);
+                        PlayerStore.get(controlledPlayerID).brake(0f);
+                        PlayerStore.get(controlledPlayerID).accelerate(accelerationValue);
                     }
                 }
                 
                 
             }else {
-                TestingPlayer.brake(5f);
+                PlayerStore.get(controlledPlayerID).brake(5f);
             }
         } 
     };
