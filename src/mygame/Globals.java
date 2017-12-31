@@ -13,6 +13,8 @@ import com.jme3.bounding.BoundingBox;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.collision.shapes.HullCollisionShape;
+import com.jme3.bullet.collision.shapes.MeshCollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
@@ -29,6 +31,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.CameraControl.ControlDirection;
+import com.jme3.scene.shape.Cylinder;
 import java.util.Random;
 
 /**
@@ -160,6 +163,7 @@ class Player extends BaseAppState{
         NODE_GAME.attachChild(carNode);
         getPhysicsSpace().add(player);
         player.setPhysicsLocation(new Vector3f(X_Tab[ID -1], Y_Initial, Z_Tab[ID -1]));
+        player.setPhysicsLocation(new Vector3f(40, 3, 350)); 
         player.setPhysicsRotation(new Matrix3f( 0, 0, 1,
                                                 0, 1, 0, 
                                                 -1, 0, 0));
@@ -351,69 +355,86 @@ class Player extends BaseAppState{
 }
 
 //-------------------------------------------------WOLF---------------------------------------------------------------------------------------
-class Wolf extends BaseAppState{
-    private float X_Position = 0;
-    private float Y_Position = 0;
-    private float Z_Position = -45;
-    private final int X_GlobalPosition = 50;
-    private final int Y_GlobalPosition = 0;
-    private final int Z_GlobalPosition = -5;
+class Truck extends BaseAppState{
+    private float X_Position = 15;
+    private float Y_Position = 2f;
+    private float Z_Position = 342;
+//    private final int X_GlobalPosition = 15;
+//    private final int Y_GlobalPosition = 0;
+//    private final int Z_GlobalPosition = 320;
     private final SimpleApplication myApp;
     private final Node GameNode;
-    private Spatial animal;
-    private Node animalNode;
-    private int X_Path[] = {0,0,0,0,0,0,0,0,-40,-40,-40,-40,-40,-40,-40,-40,0};
-    private int Y_Path[] = {0,3,3,0,0,3,3,0,0,3,3,0,0,3,3,0,0};
-    private int Z_Path[] = {-45,-35,-15,-10,5,10,30,40,40,30,10,5,-10,-15,-35,-45,-45};
-    private int pathIndex = 0;
-    private float globalSpeed = 8;
-    private float X_Speed;
-    private float Y_Speed;
-    private float Z_Speed;
-    private double distance;
-    private float timeToNextStep;
+    private Spatial truck;
+    private Node truckNode;
+//    private int X_Path[] = {0,0,0,0,0,0,0,0,-40,-40,-40,-40,-40,-40,-40,-40,0};
+//    private int Y_Path[] = {0,3,3,0,0,3,3,0,0,3,3,0,0,3,3,0,0};
+//    private int Z_Path[] = {-45,-35,-15,-10,5,10,30,40,40,30,10,5,-10,-15,-35,-45,-45};
+//    private int pathIndex = 0;
+//    private float globalSpeed = 8;
+//    private float X_Speed;
+//    private float Y_Speed;
+//    private float Z_Speed;
+//    private double distance;
+//    private float timeToNextStep;
     private final Random myRand = new Random();
-    private int randomTimerDelay = myRand.nextInt((60 - 25) + 1) + 25;
+    private final int randomTimerDelay = myRand.nextInt((10 - 8) + 1) + 8; //myRand.nextInt((60 - 25) + 1) + 25
     private float randomTimer = 0;
-    private boolean move = false;
+//    private boolean move = false;
+    private final BulletAppState myBulletAppState;
+//    private RigidBodyControl rigidTruck1;
+    private RigidBodyControl[] rigidOilDrum = new RigidBodyControl[3];
+    private boolean drumOnTheTruck = true;
     
-    public Wolf(SimpleApplication app, Node gameNode){
+    public Truck(SimpleApplication app, Node gameNode, BulletAppState bulletAppState){
         myApp = app;
         GameNode = gameNode;
+        myBulletAppState = bulletAppState;
     }
     
     @Override
     protected void initialize(Application app) {
-        createWolf();
-        // init values :
-        setParameter(pathIndex);
-        GameNode.attachChild(animalNode); 
-        animal.setLocalTranslation(X_Position, Y_Position, Z_Position);
+        createTruck();
+//        // init values :
+//        setParameter(pathIndex);
+//        GameNode.attachChild(animalNode); 
+//        animal.setLocalTranslation(X_Position, Y_Position, Z_Position);
     }
 
     @Override
-    public void update(float tpf) {        
-        if(!move){
-            randomTimingForAnimal(tpf);
-        } else{
-            if (getCondition()){
-                X_Position += X_Speed * tpf;
-                Y_Position += Y_Speed * tpf;
-                Z_Position += Z_Speed * tpf;
-                animal.setLocalTranslation(X_Position, Y_Position, Z_Position);            
-            } else{
-                pathIndex++;
-    //            System.out.println(pathIndex -1 +"mygame.Wolf.update()" + X_Position + " "+  Y_Position +" "+  Z_Position);
-                X_Position = X_Path[pathIndex];
-                Y_Position = Y_Path[pathIndex];
-                Z_Position = Z_Path[pathIndex];            
-                if(pathIndex == 16){
-                    pathIndex = 0;
-                    move = false;
-                }
-                setParameter(pathIndex);
+    public void update(float tpf) { 
+        if (drumOnTheTruck){
+           randomTimer += tpf; 
+           System.out.println("time : " + randomTimer +" less than " + randomTimerDelay);
+        } 
+               
+        if (randomTimer >= randomTimerDelay && drumOnTheTruck){
+            randomTimer = 0;
+            for (int i = 0; i < rigidOilDrum.length; i++) {
+                rigidOilDrum[i].setLinearVelocity(new Vector3f(0, 0, -5));
             }
+            drumOnTheTruck = false;
         }
+//        if(!move){
+//            randomTimingForAnimal(tpf);
+//        } else{
+//            if (getCondition()){
+//                X_Position += X_Speed * tpf;
+//                Y_Position += Y_Speed * tpf;
+//                Z_Position += Z_Speed * tpf;
+//                animal.setLocalTranslation(X_Position, Y_Position, Z_Position);            
+//            } else{
+//                pathIndex++;
+//    //            System.out.println(pathIndex -1 +"mygame.Wolf.update()" + X_Position + " "+  Y_Position +" "+  Z_Position);
+//                X_Position = X_Path[pathIndex];
+//                Y_Position = Y_Path[pathIndex];
+//                Z_Position = Z_Path[pathIndex];            
+//                if(pathIndex == 16){
+//                    pathIndex = 0;
+//                    move = false;
+//                }
+//                setParameter(pathIndex);
+//            }
+//        }
     }
     
     @Override
@@ -423,74 +444,131 @@ class Wolf extends BaseAppState{
 
     @Override
     protected void onEnable() {
-        
-    }
+        for (int i = 0; i < rigidOilDrum.length; i++){
+            rigidOilDrum[i].setPhysicsLocation(new Vector3f(X_Position + 1 - i, Y_Position + 3, Z_Position - 2*i));
+            rigidOilDrum[i].setPhysicsRotation(new Matrix3f(0, 0, 1,
+                                                            0, 1, 0, 
+                                                            -1, 0, 0));
+        }
+    }        
 
     @Override
     protected void onDisable() {
         // TODO : reset some values (maybe ???)
     }    
 
-    private void createWolf() {
-        animal = myApp.getAssetManager().loadModel("Models/Wolf.j3o");
-        Material animalMat = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        animalMat.setColor("Color", ColorRGBA.Black);
-        animal.setMaterial(animalMat);
-        animalNode = new Node();
-        animalNode.attachChild(animal);
-        animalNode.setLocalTranslation(X_GlobalPosition, Y_GlobalPosition, Z_GlobalPosition);
+    private void createTruck() {
         
-        //TODO : Collision stuff
+        truck = myApp.getAssetManager().loadModel("Models/Old_Truck/Old_Truck.j3o");
+        truckNode = new Node();
+        truckNode.attachChild(truck);
+        truckNode.setLocalTranslation(X_Position, Y_Position, Z_Position);
+        CollisionShape truckHull = CollisionShapeFactory.createDynamicMeshShape(findGeom(truck, "Old_Truck-geom-0"));
+        RigidBodyControl rigidTruck1 = new RigidBodyControl(truckHull, 2500);
+        truck.addControl(rigidTruck1);
+        myBulletAppState.getPhysicsSpace().add(rigidTruck1);
+        GameNode.attachChild(truckNode);
+        
+        for (int i = 0; i < rigidOilDrum.length; i++){
+//            Spatial oilDrum = myApp.getAssetManager().loadModel("Models/drum2/barrels_obj.j3o");
+            Cylinder drum = new Cylinder(30, 30, 0.7f, 2, true);
+            Geometry drumGeom = new Geometry("drum", drum);
+            Material drumMat = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+            drumMat.setColor("Color", ColorRGBA.Gray);
+            drumMat.setTexture("ColorMap", myApp.getAssetManager().loadTexture("Models/drum2/textures/drum1_base_color.png"));
+            drumGeom.setMaterial(drumMat);
+            Node oilDrumNode = new Node("oilDrum");
+            oilDrumNode.attachChild(drumGeom);
+            GameNode.attachChild(oilDrumNode);
+//            oilDrumNode.setLocalTranslation(X_Position, Y_Position + 3, Z_Position - 2*i);
+            drumGeom.rotate(0, 90, 0);
+//            HullCollisionShape oilDrumShape = new HullCollisionShape(findGeom(oilDrum, "Cylinder.0011").getMesh());
+            rigidOilDrum[i] = new RigidBodyControl(100);
+            drumGeom.addControl(rigidOilDrum[i]);
+            myBulletAppState.getPhysicsSpace().add(rigidOilDrum[i]);            
+        }
+//        Material animalMat = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+//        animalMat.setColor("Color", ColorRGBA.Black);
+//        animal.setMaterial(animalMat);
+        
+//        
+//        //TODO : Collision stuff
+////        HullCollisionShape wolfShape = new HullCollisionShape(findGeom(animal, "Wolf-geom-0"));
+////        CollisionShape wolfShape = CollisionShapeFactory.createDynamicMeshShape(findGeom(animal, "Wolf-geom-0"));
+////        RigidBodyControl wolf = new RigidBodyControl(wolfShape, 1);
+////        animal.addControl(wolf);
+////        myBulletAppState.getPhysicsSpace().add(wolf);
+//        RigidBodyControl wolf = new RigidBodyControl(500);
+//        animal.addControl(wolf);
+//        myBulletAppState.getPhysicsSpace().add(wolf);
     }
     
     private void setParameter(int pathIndex){
-        distance = Math.sqrt(Math.pow(X_Path[pathIndex + 1] - X_Path[pathIndex], 2) + 
-                            Math.pow(Y_Path[pathIndex + 1] - Y_Path[pathIndex], 2) + 
-                            Math.pow(Z_Path[pathIndex + 1] - Z_Path[pathIndex], 2));
-        timeToNextStep = (float) (distance / globalSpeed);
-        X_Speed = (X_Path[pathIndex + 1] - X_Path[pathIndex]) / timeToNextStep;
-        Y_Speed = (Y_Path[pathIndex + 1] - Y_Path[pathIndex]) / timeToNextStep;
-        Z_Speed = (Z_Path[pathIndex + 1] - Z_Path[pathIndex]) / timeToNextStep;
-//        System.out.println(X_Speed + " mygame.Wolf.initialize()" + Y_Speed + " " + Z_Speed);
+//        distance = Math.sqrt(Math.pow(X_Path[pathIndex + 1] - X_Path[pathIndex], 2) + 
+//                            Math.pow(Y_Path[pathIndex + 1] - Y_Path[pathIndex], 2) + 
+//                            Math.pow(Z_Path[pathIndex + 1] - Z_Path[pathIndex], 2));
+//        timeToNextStep = (float) (distance / globalSpeed);
+//        X_Speed = (X_Path[pathIndex + 1] - X_Path[pathIndex]) / timeToNextStep;
+//        Y_Speed = (Y_Path[pathIndex + 1] - Y_Path[pathIndex]) / timeToNextStep;
+//        Z_Speed = (Z_Path[pathIndex + 1] - Z_Path[pathIndex]) / timeToNextStep;
+////        System.out.println(X_Speed + " mygame.Wolf.initialize()" + Y_Speed + " " + Z_Speed);
     }
     
-    private boolean getCondition(){
-        if (pathIndex < 7){
-            if(Z_Position < Z_Path[pathIndex + 1]){
-                return true;
-            }else{
-                return false;
-            }
-        } else if (pathIndex == 7){
-            if(X_Position > X_Path[pathIndex + 1]){
-                return true;
-            }else{
-                return false;
-            }            
-        } else if (pathIndex < 15){
-            if(Z_Position > Z_Path[pathIndex + 1]){
-                return true;
-            }else{
-                return false;
-            }
-        } else if(pathIndex == 15){
-            if(X_Position < X_Path[pathIndex + 1]){
-                return true;
-            }else{
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
+//    private boolean getCondition(){
+//        if (pathIndex < 7){
+//            if(Z_Position < Z_Path[pathIndex + 1]){
+//                return true;
+//            }else{
+//                return false;
+//            }
+//        } else if (pathIndex == 7){
+//            if(X_Position > X_Path[pathIndex + 1]){
+//                return true;
+//            }else{
+//                return false;
+//            }            
+//        } else if (pathIndex < 15){
+//            if(Z_Position > Z_Path[pathIndex + 1]){
+//                return true;
+//            }else{
+//                return false;
+//            }
+//        } else if(pathIndex == 15){
+//            if(X_Position < X_Path[pathIndex + 1]){
+//                return true;
+//            }else{
+//                return false;
+//            }
+//        } else {
+//            return false;
+//        }
+//    }
     
-    private void randomTimingForAnimal(float tpf) {
-        randomTimer += tpf;
-        System.out.println("time : " + randomTimer +" less than " + randomTimerDelay + " tpf : " + tpf);
-        if (randomTimer >= randomTimerDelay){
-            move = true;
-            randomTimer = 0;
-            randomTimerDelay = myRand.nextInt((60 - 25) + 1) + 25;
+//    private void randomTimingForAnimal(float tpf) {
+//        randomTimer += tpf;
+//        System.out.println("time : " + randomTimer +" less than " + randomTimerDelay + " tpf : " + tpf);
+//        if (randomTimer >= randomTimerDelay){
+////            move = true;
+//            randomTimer = 0;
+//            randomTimerDelay = myRand.nextInt((60 - 25) + 1) + 25;
+//        }
+//    }
+    
+    private Geometry findGeom(Spatial spatial, String name) {
+        if (spatial instanceof Node) {
+            Node node = (Node) spatial;
+            for (int i = 0; i < node.getQuantity(); i++) {
+                Spatial child = node.getChild(i);
+                Geometry result = findGeom(child, name);
+                if (result != null) {
+                    return result;
+                }
+            }
+        } else if (spatial instanceof Geometry) {
+            if (spatial.getName().startsWith(name)) {
+                return (Geometry) spatial;
+            }
         }
+        return null;
     }
 }

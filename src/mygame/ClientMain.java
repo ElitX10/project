@@ -37,11 +37,10 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     private int controlledPlayerID = 0; // TODO : set this depending of the information of the server !
     //app state : 
     private ArrayList<Player> PlayerStore = new ArrayList<Player>();
-    private Wolf movingWolf = new Wolf(this, NODE_GAME);;
+    private Truck movingWolf; 
     
     public ClientMain(){
-        movingWolf.setEnabled(true);
-        stateManager.attach(movingWolf);
+        
     }
     
     public static void main(String[] args) {
@@ -96,6 +95,11 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         stateManager.attach(TestingPlayer);
         TestingPlayer.setEnabled(true);
         PlayerStore.add(TestingPlayer);
+        
+        //create the moving animal :
+        movingWolf = new Truck(this, NODE_GAME, bulletAppState);        
+        movingWolf.setEnabled(true);
+        stateManager.attach(movingWolf);
         
         // set up key for controlling the car :
         setupKeys();
@@ -224,6 +228,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                 
             }else {
                 PlayerStore.get(controlledPlayerID).brake(5f);
+                PlayerStore.get(controlledPlayerID).accelerate(accelerationValue);
             }
         } 
     };
