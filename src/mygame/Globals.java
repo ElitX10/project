@@ -50,7 +50,7 @@ public class Globals {
 //        Serializer.registerClass(TimeMessage.class);
     }
     
-    public void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
+    public static void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
         
         // create the road :
         Spatial gameLevel = myApp.getAssetManager().loadModel("Scenes/Road.j3o");
@@ -124,8 +124,9 @@ class Player extends BaseAppState{
     private final Node NODE_GAME;
     private final BulletAppState myBulletAppState;
     private final int ID;
-    
+    private int hostNumber = -1;
     private static int numberOfPlayer = 0;
+    private boolean isConnected = true;
     
     public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState){
         myApp = app;
@@ -138,6 +139,21 @@ class Player extends BaseAppState{
         // give an id to every player to separate input later and for displaying the score on the sceen for each player :
         this.ID = numberOfPlayer;
     }  
+    
+    public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState, int hostNum){
+        myApp = app;
+        NODE_GAME = gameNode;
+        myBulletAppState = bulletAppState;
+        
+        // increase the number of player every time we create one player  
+        numberOfPlayer++;
+        
+        // give an id to every player to separate input later and for displaying the score on the sceen for each player :
+        this.ID = numberOfPlayer;
+        
+        // set host number for server :
+        hostNumber = hostNum;
+    }
     
     public static void resetNumberOfPlayer(){
         numberOfPlayer = 0;
@@ -173,6 +189,7 @@ class Player extends BaseAppState{
     protected void onDisable() {
         NODE_GAME.detachChild(carNode);
         getPhysicsSpace().remove(player);
+        isConnected = false;
     }
     
     private void buildPlayer() {
@@ -351,6 +368,10 @@ class Player extends BaseAppState{
 
     void PlayStopSoundNode() {
         stopSoundNode.play();
+    }
+    
+    public int getHostNum(){
+        return hostNumber;
     }
 }
 
