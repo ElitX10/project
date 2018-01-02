@@ -422,6 +422,14 @@ class Player extends BaseAppState{
     public int getHostNum(){
         return hostNumber;
     }
+    
+    public Vector3f getPosition(){
+        return player.getPhysicsLocation();
+    }
+    
+    public Matrix3f getRotation() {
+        return player.getPhysicsRotationMatrix();
+    }
 }
 
 //-------------------------------------------------TRUCK---------------------------------------------------------------------------------------
@@ -475,8 +483,7 @@ class Truck extends BaseAppState{
         if (myApp instanceof ServerMain){
             
             if (drumOnTheTruck){
-                randomTimer += tpf; 
-//                System.out.println("time : " + randomTimer +" less than " + randomTimerDelay);
+                randomTimer += tpf;
             }               
             if (randomTimer >= randomTimerDelay && drumOnTheTruck){
                 randomTimer = 0;

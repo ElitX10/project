@@ -151,16 +151,10 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                         float[] Z = drumPosMess.getZ();
                         float[][] rot = drumPosMess.getRotation();
                         for(int i = 0; i < 3; i++){
-                            System.out.println("mess received" + (truck.getX()[i] - X[i]));
                             if(Math.abs(truck.getX()[i] - X[i]) > 1.5f || Math.abs(truck.getY()[i] - Y[i]) > 1.5f || Math.abs(truck.getZ()[i] - Z[i]) > 1.5f){
                                 truck.moveTo(X[i], Y[i], Z[i], i);
                                 truck.setRotation(rot, i);
-                            }else {
-                                System.out.println("no need to udate");
                             }
-//                            System.out.println( "X : "+ X[i] +
-//                                            "Y : "+ Y[i] +
-//                                            "Z : "+ Z[i]);
                         }
                         
                         return true;
