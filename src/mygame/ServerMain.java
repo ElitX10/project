@@ -31,6 +31,10 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     private Node NODE_GAME = new Node("NODE_GAME");
     private BulletAppState bulletAppState;
     private Truck truck;
+    private float lowUpdateTimer = 0;
+    private float hightUpdateTimer = 0;
+    private float lowUpdateTimerMax = 1;
+    private float hightUpdateTimerMax = 0.15f;
     
     public ServerMain(){
         
@@ -74,6 +78,24 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         truck.setEnabled(true);
         stateManager.attach(truck);
     }
+
+    @Override
+    public void simpleUpdate(float tpf) {
+        lowUpdateTimer += tpf;
+        hightUpdateTimer += tpf;
+        // broadcast message all the time :
+        if (lowUpdateTimer > lowUpdateTimerMax){
+            lowUpdateTimer = 0;
+            // position of drum
+            if(truck.isEnabled()){
+                System.out.println("send mess");
+                truck.sendInfo();
+            }            
+        }
+        if (hightUpdateTimer > hightUpdateTimerMax){
+            hightUpdateTimer = 0;
+        }
+    }
     
     // to ensure to close the net connection cleanly :
     @Override
@@ -93,7 +115,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             playerStore.add(newPlayer);
         }else {
             waitingList.add(client.getId()); 
-        }
+        }        
     }
 
     @Override
@@ -108,7 +130,6 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             int indexInWaitingList = getIndexOfWaitingList(client.getId());
             waitingList.remove(indexInWaitingList);
         }
-        
     }
     
     public class ServerListener implements MessageListener<HostedConnection>{
@@ -137,4 +158,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         return -1;
     }
 
+    public Server getMyServer(){
+        return myServer;
+    }    
 }

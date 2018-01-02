@@ -24,6 +24,9 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
+import com.jme3.network.AbstractMessage;
+import com.jme3.network.Server;
+import com.jme3.network.serializing.Serializable;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.CameraNode;
@@ -33,6 +36,7 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.control.CameraControl.ControlDirection;
 import com.jme3.scene.shape.Cylinder;
 import java.util.Random;
+import mygame.Globals.*;
 
 /**
  *
@@ -47,7 +51,8 @@ public class Globals {
     
     // register all message types there are
     public static void initialiseSerializables() {
-//        Serializer.registerClass(TimeMessage.class);
+        Serializer.registerClass(randomEventMessage.class);
+        Serializer.registerClass(drumPosition.class);
     }
     
     public static void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
@@ -73,6 +78,46 @@ public class Globals {
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
         GameNode.addLight(dl);
+    }
+    
+    @Serializable
+    public static class randomEventMessage extends AbstractMessage{
+        
+    }
+    
+    @Serializable
+    public static class drumPosition extends AbstractMessage{
+        private float X_Pos[];
+        private float Y_Pos[];
+        private float Z_Pos[];
+        private float rotation[][];
+        
+        public drumPosition(){
+            
+        }
+        
+        public drumPosition(float X[], float Y[], float Z[], float rot[][]){
+            X_Pos = X;
+            Y_Pos = Y;
+            Z_Pos = Z;
+            rotation = rot;
+        }
+        
+        public float[] getX(){
+            return X_Pos;
+        }
+        
+        public float[] getY(){
+            return Y_Pos;
+        }
+        
+        public float[] getZ(){
+            return Z_Pos;
+        }
+        
+        public float[][] getRotation(){
+            return rotation;
+        }
     }
 }
 
@@ -267,7 +312,11 @@ class Player extends BaseAppState{
         engineNoiseNode.setLooping(true);
         engineNoiseNode.setVolume(0.1f);
         carNode.attachChild(engineNoiseNode);
-        engineNoiseNode.play();
+        if (myApp instanceof ServerMain){
+            
+        }else{
+            engineNoiseNode.play();
+        }        
         
         accelerationSoundNode = new AudioNode(myApp.getAssetManager(), "Sounds/acceleration.ogg");
         accelerationSoundNode.setPositional(true);
@@ -375,7 +424,7 @@ class Player extends BaseAppState{
     }
 }
 
-//-------------------------------------------------WOLF---------------------------------------------------------------------------------------
+//-------------------------------------------------TRUCK---------------------------------------------------------------------------------------
 class Truck extends BaseAppState{
     private float X_Position = 15;
     private float Y_Position = 2f;
@@ -423,39 +472,25 @@ class Truck extends BaseAppState{
 
     @Override
     public void update(float tpf) { 
-        if (drumOnTheTruck){
-           randomTimer += tpf; 
-           System.out.println("time : " + randomTimer +" less than " + randomTimerDelay);
-        } 
-               
-        if (randomTimer >= randomTimerDelay && drumOnTheTruck){
-            randomTimer = 0;
-            for (int i = 0; i < rigidOilDrum.length; i++) {
-                rigidOilDrum[i].setLinearVelocity(new Vector3f(0, 0, -5));
+        if (myApp instanceof ServerMain){
+            
+            if (drumOnTheTruck){
+                randomTimer += tpf; 
+//                System.out.println("time : " + randomTimer +" less than " + randomTimerDelay);
+            }               
+            if (randomTimer >= randomTimerDelay && drumOnTheTruck){
+                randomTimer = 0;
+                ServerMain serverApp = (ServerMain) myApp;
+                Server myServer = serverApp.getMyServer();
+                randomEventMessage triggerMess = new randomEventMessage();
+                myServer.broadcast(triggerMess);
+                // TODO : broadcast message to clients !!!
+                for (int i = 0; i < rigidOilDrum.length; i++) {
+                    rigidOilDrum[i].setLinearVelocity(new Vector3f(0, 0, -5));
+                }
+                drumOnTheTruck = false;
             }
-            drumOnTheTruck = false;
         }
-//        if(!move){
-//            randomTimingForAnimal(tpf);
-//        } else{
-//            if (getCondition()){
-//                X_Position += X_Speed * tpf;
-//                Y_Position += Y_Speed * tpf;
-//                Z_Position += Z_Speed * tpf;
-//                animal.setLocalTranslation(X_Position, Y_Position, Z_Position);            
-//            } else{
-//                pathIndex++;
-//    //            System.out.println(pathIndex -1 +"mygame.Wolf.update()" + X_Position + " "+  Y_Position +" "+  Z_Position);
-//                X_Position = X_Path[pathIndex];
-//                Y_Position = Y_Path[pathIndex];
-//                Z_Position = Z_Path[pathIndex];            
-//                if(pathIndex == 16){
-//                    pathIndex = 0;
-//                    move = false;
-//                }
-//                setParameter(pathIndex);
-//            }
-//        }
     }
     
     @Override
@@ -491,7 +526,6 @@ class Truck extends BaseAppState{
         GameNode.attachChild(truckNode);
         
         for (int i = 0; i < rigidOilDrum.length; i++){
-//            Spatial oilDrum = myApp.getAssetManager().loadModel("Models/drum2/barrels_obj.j3o");
             Cylinder drum = new Cylinder(30, 30, 0.7f, 2, true);
             Geometry drumGeom = new Geometry("drum", drum);
             Material drumMat = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
@@ -501,79 +535,18 @@ class Truck extends BaseAppState{
             Node oilDrumNode = new Node("oilDrum");
             oilDrumNode.attachChild(drumGeom);
             GameNode.attachChild(oilDrumNode);
-//            oilDrumNode.setLocalTranslation(X_Position, Y_Position + 3, Z_Position - 2*i);
             drumGeom.rotate(0, 90, 0);
-//            HullCollisionShape oilDrumShape = new HullCollisionShape(findGeom(oilDrum, "Cylinder.0011").getMesh());
             rigidOilDrum[i] = new RigidBodyControl(100);
             drumGeom.addControl(rigidOilDrum[i]);
             myBulletAppState.getPhysicsSpace().add(rigidOilDrum[i]);            
         }
-//        Material animalMat = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-//        animalMat.setColor("Color", ColorRGBA.Black);
-//        animal.setMaterial(animalMat);
-        
-//        
-//        //TODO : Collision stuff
-////        HullCollisionShape wolfShape = new HullCollisionShape(findGeom(animal, "Wolf-geom-0"));
-////        CollisionShape wolfShape = CollisionShapeFactory.createDynamicMeshShape(findGeom(animal, "Wolf-geom-0"));
-////        RigidBodyControl wolf = new RigidBodyControl(wolfShape, 1);
-////        animal.addControl(wolf);
-////        myBulletAppState.getPhysicsSpace().add(wolf);
-//        RigidBodyControl wolf = new RigidBodyControl(500);
-//        animal.addControl(wolf);
-//        myBulletAppState.getPhysicsSpace().add(wolf);
     }
-    
-    private void setParameter(int pathIndex){
-//        distance = Math.sqrt(Math.pow(X_Path[pathIndex + 1] - X_Path[pathIndex], 2) + 
-//                            Math.pow(Y_Path[pathIndex + 1] - Y_Path[pathIndex], 2) + 
-//                            Math.pow(Z_Path[pathIndex + 1] - Z_Path[pathIndex], 2));
-//        timeToNextStep = (float) (distance / globalSpeed);
-//        X_Speed = (X_Path[pathIndex + 1] - X_Path[pathIndex]) / timeToNextStep;
-//        Y_Speed = (Y_Path[pathIndex + 1] - Y_Path[pathIndex]) / timeToNextStep;
-//        Z_Speed = (Z_Path[pathIndex + 1] - Z_Path[pathIndex]) / timeToNextStep;
-////        System.out.println(X_Speed + " mygame.Wolf.initialize()" + Y_Speed + " " + Z_Speed);
+   
+    public void triggerEvent(){
+        for (int i = 0; i < rigidOilDrum.length; i++) {
+            rigidOilDrum[i].setLinearVelocity(new Vector3f(0, 0, -5));
+        }
     }
-    
-//    private boolean getCondition(){
-//        if (pathIndex < 7){
-//            if(Z_Position < Z_Path[pathIndex + 1]){
-//                return true;
-//            }else{
-//                return false;
-//            }
-//        } else if (pathIndex == 7){
-//            if(X_Position > X_Path[pathIndex + 1]){
-//                return true;
-//            }else{
-//                return false;
-//            }            
-//        } else if (pathIndex < 15){
-//            if(Z_Position > Z_Path[pathIndex + 1]){
-//                return true;
-//            }else{
-//                return false;
-//            }
-//        } else if(pathIndex == 15){
-//            if(X_Position < X_Path[pathIndex + 1]){
-//                return true;
-//            }else{
-//                return false;
-//            }
-//        } else {
-//            return false;
-//        }
-//    }
-    
-//    private void randomTimingForAnimal(float tpf) {
-//        randomTimer += tpf;
-//        System.out.println("time : " + randomTimer +" less than " + randomTimerDelay + " tpf : " + tpf);
-//        if (randomTimer >= randomTimerDelay){
-////            move = true;
-//            randomTimer = 0;
-//            randomTimerDelay = myRand.nextInt((60 - 25) + 1) + 25;
-//        }
-//    }
     
     private Geometry findGeom(Spatial spatial, String name) {
         if (spatial instanceof Node) {
@@ -591,5 +564,74 @@ class Truck extends BaseAppState{
             }
         }
         return null;
+    }
+    
+    public float[] getX(){
+        float X[] = new float[3];
+        for (int i = 0; i < 3; i++){
+            X[i] = rigidOilDrum[i].getPhysicsLocation().x;
+        }
+        return X;
+    }
+    
+    public float[] getY(){
+        float Y[] = new float[3];
+        for (int i = 0; i < 3; i++){
+            Y[i] = rigidOilDrum[i].getPhysicsLocation().y;
+        }
+        return Y;
+    }
+    
+    public float[] getZ(){
+        float Z[] = new float[3];
+        for (int i = 0; i < 3; i++){
+            Z[i] = rigidOilDrum[i].getPhysicsLocation().z;
+        }
+        return Z;
+    }
+    
+    public void moveTo(float X, float Y, float Z, int index){
+        rigidOilDrum[index].setPhysicsLocation(new Vector3f(X, Y, Z));
+    }
+    
+    public void sendInfo(){
+        if(myApp instanceof ServerMain){
+            ServerMain myServerApp = (ServerMain) myApp;
+            Server myServer = myServerApp.getMyServer();
+            float[] X = new float[3];
+            float[] Y = new float[3];
+            float[] Z = new float[3];
+            float[][] rot = new float[3][9];
+            for (int i = 0; i < rigidOilDrum.length; i++) {
+                X[i] = rigidOilDrum[i].getPhysicsLocation().x;
+                Y[i] = rigidOilDrum[i].getPhysicsLocation().y;
+                Z[i] = rigidOilDrum[i].getPhysicsLocation().z;
+                int j = 0;
+                for (int row = 0; row < 3; row++){
+                    for (int colum = 0; colum < 3; colum++){
+                        rot[i][j] = rigidOilDrum[i].getPhysicsRotationMatrix().get(row,colum);
+                        j++;
+                    }
+                    
+                }
+            }
+            drumPosition posMess = new drumPosition(X, Y, Z, rot);
+            myServer.broadcast(posMess);
+        }/*else{
+        // just for test
+        System.out.println("mygame.Truck.sendInfo()");
+        for (int i = 0; i < rigidOilDrum.length; i++) {
+        System.out.println("X : "+ rigidOilDrum[i].getPhysicsLocation().x +
+        "Y : "+ rigidOilDrum[i].getPhysicsLocation().y +
+        "Z : "+ rigidOilDrum[i].getPhysicsLocation().z);
+        System.out.println("rot :" +rigidOilDrum[i].getPhysicsRotationMatrix());
+        }
+        }*/
+    }
+
+    void setRotation(float[][] rot, int i) {
+        rigidOilDrum[i].setPhysicsRotation(new Matrix3f(rot[i][0], rot[i][1], rot[i][2],
+                                                        rot[i][3], rot[i][4], rot[i][5], 
+                                                        rot[i][6], rot[i][7], rot[i][8]));
     }
 }

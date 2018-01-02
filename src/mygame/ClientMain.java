@@ -21,6 +21,9 @@ import com.jme3.network.Network;
 import com.jme3.scene.Node;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import mygame.Globals.*;
 
 /**
  *
@@ -76,8 +79,9 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         myClient.addClientStateListener(this);
         
         // add message listenter :
-//        myClient.addMessageListener(new ClientListener(),
-//                                    TimeMessage.class);
+        myClient.addMessageListener(new ClientListener(),
+                                    randomEventMessage.class,
+                                    drumPosition.class);
 
         //node containing all the other new node on the game :
         rootNode.attachChild(NODE_GAME);  
@@ -128,7 +132,41 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
 
         @Override
         public void messageReceived(Client source, Message m) {
-            
+            if(m instanceof randomEventMessage){
+                Future result = ClientMain.this.enqueue(new Callable() {
+                    @Override
+                    public Object call() throws Exception {
+                        truck.triggerEvent();
+                        return true;
+                    }
+                }); 
+            }else if(m instanceof drumPosition){
+                final drumPosition drumPosMess = (drumPosition) m;
+                Future result = ClientMain.this.enqueue(new Callable() {
+                    @Override
+                    public Object call() throws Exception {
+                        truck.sendInfo();
+                        float[] X = drumPosMess.getX();
+                        float[] Y = drumPosMess.getY();
+                        float[] Z = drumPosMess.getZ();
+                        float[][] rot = drumPosMess.getRotation();
+                        for(int i = 0; i < 3; i++){
+                            System.out.println("mess received");
+                            if(Math.abs(truck.getX()[i] - X[i]) < 1.5f || Math.abs(truck.getY()[i] - Y[i]) < 1.5f || Math.abs(truck.getZ()[i] - Z[i]) < 1.5f){
+                                truck.moveTo(X[i], Y[i], Z[i], i);
+                                truck.setRotation(rot, i);
+                            }else {
+                                System.out.println("no need to udate");
+                            }
+//                            System.out.println( "X : "+ X[i] +
+//                                            "Y : "+ Y[i] +
+//                                            "Z : "+ Z[i]);
+                        }
+                        
+                        return true;
+                    }
+                });
+            }
         }
         
     }
@@ -143,7 +181,6 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         inputManager.addListener(actionListener, "Rights");
         inputManager.addListener(actionListener, "Ups");
         inputManager.addListener(actionListener, "Downs");
-//        inputManager.addListener(this, "Space");
         inputManager.addListener(actionListener, "Reset");
     }
     
