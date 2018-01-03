@@ -54,6 +54,7 @@ public class Globals {
         Serializer.registerClass(RandomEventMessage.class);
         Serializer.registerClass(DrumPositionMessage.class);
         Serializer.registerClass(CarPositionMessage.class);
+        Serializer.registerClass(CarParameterMessage.class);
     }
     
     public static void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
@@ -319,7 +320,7 @@ class Player extends BaseAppState{
         NODE_GAME.attachChild(carNode);
         getPhysicsSpace().add(player);
         player.setPhysicsLocation(new Vector3f(X_Tab[ID -1], Y_Initial, Z_Tab[ID -1]));
-        player.setPhysicsLocation(new Vector3f(40, 3, 350)); 
+//        player.setPhysicsLocation(new Vector3f(40, 3, 350)); 
         player.setPhysicsRotation(new Matrix3f( 0, 0, 1,
                                                 0, 1, 0, 
                                                 -1, 0, 0));

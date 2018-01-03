@@ -109,7 +109,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         stateManager.attach(truck);
         
         // set up key for controlling the car :
-        setupKeys();
+        setupKeys(true); //TODO : set up key when the race start !!
     }
 
     // to ensure to close the net connection cleanly :
@@ -212,17 +212,26 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         
     }
     
-    private void setupKeys() {
-        inputManager.addMapping("Lefts", new KeyTrigger(KeyInput.KEY_H));
-        inputManager.addMapping("Rights", new KeyTrigger(KeyInput.KEY_K));
-        inputManager.addMapping("Ups", new KeyTrigger(KeyInput.KEY_U));
-        inputManager.addMapping("Downs", new KeyTrigger(KeyInput.KEY_J));
-        inputManager.addMapping("Reset", new KeyTrigger(KeyInput.KEY_RETURN));
-        inputManager.addListener(actionListener, "Lefts");
-        inputManager.addListener(actionListener, "Rights");
-        inputManager.addListener(actionListener, "Ups");
-        inputManager.addListener(actionListener, "Downs");
-        inputManager.addListener(actionListener, "Reset");
+    private void setupKeys(boolean turnOn) {
+        if(turnOn){
+            // able key input
+            if(!inputManager.hasMapping("Lefts")){
+                inputManager.addMapping("Lefts", new KeyTrigger(KeyInput.KEY_H));
+                inputManager.addMapping("Rights", new KeyTrigger(KeyInput.KEY_K));
+                inputManager.addMapping("Ups", new KeyTrigger(KeyInput.KEY_U));
+                inputManager.addMapping("Downs", new KeyTrigger(KeyInput.KEY_J));
+                inputManager.addMapping("Reset", new KeyTrigger(KeyInput.KEY_RETURN));
+            }    
+                inputManager.addListener(actionListener, "Lefts");
+                inputManager.addListener(actionListener, "Rights");
+                inputManager.addListener(actionListener, "Ups");
+                inputManager.addListener(actionListener, "Downs");
+                inputManager.addListener(actionListener, "Reset");  
+        }else{
+            // unable key input :
+            inputManager.removeListener(actionListener);             
+        }
+        
     }
     
     private final ActionListener actionListener = new ActionListener() {
@@ -263,6 +272,8 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                     playerStore.get(controlledPlayerID).stopStopSoundNode();
                     stopSound = false;
                 } else {
+                    setupKeys(false);
+                    setupKeys(true);
                     accelerationValue = 0;
                     playerStore.get(controlledPlayerID).stopAccelerationSoundNode();
                     playerStore.get(controlledPlayerID).stopStartSoundNode();                    

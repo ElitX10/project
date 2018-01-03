@@ -92,7 +92,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             lowUpdateTimer = 0;
             // position of drum
             if(truck.isEnabled()){
-                System.out.println("send mess");
+//                System.out.println("send mess");
                 truck.sendInfo();
             }            
         }
@@ -131,7 +131,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             playerStore.get(indexInPlayerStore).setEnabled(false); 
             // TODO : add to the list of player to remove 
         }else {
-            // TODO : remove from the waiting list
+            //remove player from the waiting list
             int indexInWaitingList = getIndexOfWaitingList(client.getId());
             waitingList.remove(indexInWaitingList);
         }
@@ -181,5 +181,20 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
 
     public Server getMyServer(){
         return myServer;
-    }    
+    } 
+    
+    private void setNewPlayer(){
+        // remove players that have left the game :
+        for(int i = playerStore.size() - 1; i>= 0; i--){
+            if(!playerStore.get(i).isEnabled()){
+                playerStore.remove(i);
+            }
+        }
+        // add player from the waiting list :        
+        while(waitingList.size() > 0 && playerStore.size() < 4){
+            Player newPlayer = new Player(this, NODE_GAME, bulletAppState, waitingList.get(0), false);
+            playerStore.add(newPlayer);
+            waitingList.remove(0);
+        }
+    }
 }
