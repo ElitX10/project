@@ -51,8 +51,9 @@ public class Globals {
     
     // register all message types there are
     public static void initialiseSerializables() {
-        Serializer.registerClass(randomEventMessage.class);
-        Serializer.registerClass(drumPosition.class);
+        Serializer.registerClass(RandomEventMessage.class);
+        Serializer.registerClass(DrumPositionMessage.class);
+        Serializer.registerClass(CarPositionMessage.class);
     }
     
     public static void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
@@ -81,22 +82,22 @@ public class Globals {
     }
     
     @Serializable
-    public static class randomEventMessage extends AbstractMessage{
+    public static class RandomEventMessage extends AbstractMessage{
         
     }
     
     @Serializable
-    public static class drumPosition extends AbstractMessage{
+    public static class DrumPositionMessage extends AbstractMessage{
         private float X_Pos[];
         private float Y_Pos[];
         private float Z_Pos[];
         private float rotation[][];
         
-        public drumPosition(){
+        public DrumPositionMessage(){
             
         }
         
-        public drumPosition(float X[], float Y[], float Z[], float rot[][]){
+        public DrumPositionMessage(float X[], float Y[], float Z[], float rot[][]){
             X_Pos = X;
             Y_Pos = Y;
             Z_Pos = Z;
@@ -117,6 +118,95 @@ public class Globals {
         
         public float[][] getRotation(){
             return rotation;
+        }
+    }
+    
+    @Serializable
+    public static class CarPositionMessage extends AbstractMessage{
+        private float X_Pos[];
+        private float Y_Pos[];
+        private float Z_Pos[];
+        private float rotation[][];
+        
+        public CarPositionMessage(){
+            
+        }
+        
+        public CarPositionMessage(float X[], float Y[], float Z[], float rot[][]){
+            X_Pos = X;
+            Y_Pos = Y;
+            Z_Pos = Z;
+            rotation = rot;
+        }
+        
+        public float[] getX(){
+            return X_Pos;
+        }
+        
+        public float[] getY(){
+            return Y_Pos;
+        }
+        
+        public float[] getZ(){
+            return Z_Pos;
+        }
+        
+        public float[][] getRotation(){
+            return rotation;
+        }
+    }
+    
+    @Serializable
+    public static class CarParameterMessage extends AbstractMessage{
+        private float accelerationValue;
+        private float steeringValue;
+        private float brakingValue;
+        private int playerID;
+        private boolean stopSound;
+        private boolean startSound;
+        private boolean accelerationSound; 
+                
+        
+        public CarParameterMessage(){
+            
+        }
+        
+        public CarParameterMessage(float acceleration, float steer, float brake, boolean stop, boolean start, boolean accelerationS, int id){
+            accelerationValue = acceleration;
+            steeringValue = steer;
+            brakingValue = brake;
+            playerID = id;
+            stopSound = stop;
+            startSound = start;
+            accelerationSound = accelerationS;
+        }
+        
+        public float getAcceleration(){
+            return accelerationValue;
+        }
+        
+        public float getSteer(){
+            return steeringValue;
+        }
+        
+        public float getBrake(){
+            return brakingValue;
+        }
+        
+        public int getID(){
+            return playerID;
+        }
+        
+        public boolean getStop(){
+            return stopSound;
+        }
+        
+        public boolean getStart(){
+            return startSound;
+        }
+        
+        public boolean getAccelerationSound(){
+            return accelerationSound;
         }
     }
 }
@@ -172,8 +262,9 @@ class Player extends BaseAppState{
     private int hostNumber = -1;
     private static int numberOfPlayer = 0;
     private boolean isConnected = true;
+    private final boolean isControlled;
     
-    public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState){
+    public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState, boolean control){
         myApp = app;
         NODE_GAME = gameNode;
         myBulletAppState = bulletAppState;
@@ -183,9 +274,11 @@ class Player extends BaseAppState{
         
         // give an id to every player to separate input later and for displaying the score on the sceen for each player :
         this.ID = numberOfPlayer;
+        
+        isControlled = control;
     }  
     
-    public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState, int hostNum){
+    public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState, int hostNum, boolean control){
         myApp = app;
         NODE_GAME = gameNode;
         myBulletAppState = bulletAppState;
@@ -198,6 +291,8 @@ class Player extends BaseAppState{
         
         // set host number for server :
         hostNumber = hostNum;
+        
+        isControlled = control;
     }
     
     public static void resetNumberOfPlayer(){
@@ -206,7 +301,7 @@ class Player extends BaseAppState{
     
     @Override
     protected void initialize(Application app) {
-        buildPlayer();
+        buildPlayer(isControlled);
     }
 
     @Override
@@ -237,7 +332,7 @@ class Player extends BaseAppState{
         isConnected = false;
     }
     
-    private void buildPlayer() {
+    private void buildPlayer(boolean isControlled) {
         float stiffness = 120.0f;//200=f1 car
         float compValue = 0.2f; //(lower than damp!)
         float dampValue = 0.3f;
@@ -297,14 +392,17 @@ class Player extends BaseAppState{
         player.getWheel(2).setFrictionSlip(9);
         player.getWheel(3).setFrictionSlip(9);
         
-        // camera following the car :
-        myApp.getFlyByCamera().setEnabled(false);
-//        flyCam.setEnabled(false);
-        camNode = new CameraNode("Camera Node", myApp.getCamera());
-        camNode.setControlDir(ControlDirection.SpatialToCamera);
-        carNode.attachChild(camNode);
-        camNode.setLocalTranslation(new Vector3f(0, 5, 15));
-        camNode.lookAt(carNode.getLocalTranslation(), Vector3f.UNIT_Y);
+        if(isControlled){
+            // camera following the car :
+            myApp.getFlyByCamera().setEnabled(false);
+    //        flyCam.setEnabled(false);
+            camNode = new CameraNode("Camera Node", myApp.getCamera());
+            camNode.setControlDir(ControlDirection.SpatialToCamera);
+            carNode.attachChild(camNode);
+            camNode.setLocalTranslation(new Vector3f(0, 5, 15));
+            camNode.lookAt(carNode.getLocalTranslation(), Vector3f.UNIT_Y);
+        }
+        
         
         // car sound :
         AudioNode engineNoiseNode = new AudioNode(myApp.getAssetManager(), "Sounds/engineNoise.ogg");
@@ -415,7 +513,7 @@ class Player extends BaseAppState{
         startSoundNode.stop();
     }
 
-    void PlayStopSoundNode() {
+    void playStopSoundNode() {
         stopSoundNode.play();
     }
     
@@ -429,6 +527,10 @@ class Player extends BaseAppState{
     
     public Matrix3f getRotation() {
         return player.getPhysicsRotationMatrix();
+    }
+    
+    public void setPosition(float X, float Y, float Z){
+        player.setPhysicsLocation(new Vector3f(X, Y, Z));
     }
 }
 
@@ -489,7 +591,7 @@ class Truck extends BaseAppState{
                 randomTimer = 0;
                 ServerMain serverApp = (ServerMain) myApp;
                 Server myServer = serverApp.getMyServer();
-                randomEventMessage triggerMess = new randomEventMessage();
+                RandomEventMessage triggerMess = new RandomEventMessage();
                 myServer.broadcast(triggerMess);
                 // TODO : broadcast message to clients !!!
                 for (int i = 0; i < rigidOilDrum.length; i++) {
@@ -622,7 +724,7 @@ class Truck extends BaseAppState{
                     
                 }
             }
-            drumPosition posMess = new drumPosition(X, Y, Z, rot);
+            DrumPositionMessage posMess = new DrumPositionMessage(X, Y, Z, rot);
             myServer.broadcast(posMess);
         }/*else{
         // just for test

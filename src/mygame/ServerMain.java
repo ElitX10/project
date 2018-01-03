@@ -8,6 +8,7 @@ package mygame;
 import com.jme3.app.SimpleApplication;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.network.ConnectionListener;
+import com.jme3.network.Filters;
 import com.jme3.network.HostedConnection;
 import com.jme3.network.Message;
 import com.jme3.network.MessageListener;
@@ -18,6 +19,9 @@ import com.jme3.scene.Node;
 import com.jme3.system.JmeContext;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import mygame.Globals.*;
 
 /**
  *
@@ -62,8 +66,8 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         myServer.addConnectionListener(this);
         
         // add message listenter : 
-//        myServer.addMessageListener(new ServerListener(),
-//                                    TimeMessage.class);
+        myServer.addMessageListener(new ServerListener(),
+                                    CarParameterMessage.class);
 
         // init bulletAppState :
         bulletAppState = new BulletAppState();
@@ -108,8 +112,9 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     
     @Override
     public void connectionAdded(Server server, HostedConnection client) {
+        // create players :
         if(playerStore.size() < 4){
-            Player newPlayer = new Player(this, NODE_GAME, bulletAppState, client.getId());       
+            Player newPlayer = new Player(this, NODE_GAME, bulletAppState, client.getId(), false);       
             stateManager.attach(newPlayer);
             newPlayer.setEnabled(true);
             playerStore.add(newPlayer);
@@ -136,7 +141,23 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
 
         @Override
         public void messageReceived(HostedConnection source, Message m) {
-
+            if(m instanceof CarParameterMessage){
+                final HostedConnection mySource = source;
+                final CarParameterMessage carParamaterMess = (CarParameterMessage) m;
+                Future result = ServerMain.this.enqueue(new Callable() {
+                    @Override
+                    public Object call() throws Exception {                        
+                        playerStore.get(carParamaterMess.getID()).accelerate(carParamaterMess.getAcceleration());
+                        playerStore.get(carParamaterMess.getID()).brake(carParamaterMess.getBrake());
+                        playerStore.get(carParamaterMess.getID()).steer(carParamaterMess.getSteer());
+                        CarParameterMessage newCarParameterMess = new CarParameterMessage(carParamaterMess.getAcceleration(), carParamaterMess.getSteer(), carParamaterMess.getBrake(), 
+                                                                                        carParamaterMess.getStop(), carParamaterMess.getStart(), carParamaterMess.getAccelerationSound(),
+                                                                                        carParamaterMess.getID());
+                        myServer.broadcast(Filters.notEqualTo(mySource), newCarParameterMess);                                                                                        
+                        return true;
+                    }
+                });
+            }
         }        
     }
     
