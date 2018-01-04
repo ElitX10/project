@@ -19,6 +19,7 @@ import com.jme3.network.Message;
 import com.jme3.network.MessageListener;
 import com.jme3.network.Network;
 import com.jme3.scene.Node;
+import com.jme3.util.SkyFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
@@ -110,6 +111,8 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         
         // set up key for controlling the car :
         setupKeys(true); //TODO : set up key when the race start !!
+        
+        getRootNode().attachChild(SkyFactory.createSky(getAssetManager(), "Textures/Sky/Bright/BrightSky.dds", SkyFactory.EnvMapType.CubeMap));
     }
 
     // to ensure to close the net connection cleanly :
