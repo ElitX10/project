@@ -196,11 +196,20 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                 Future result = ClientMain.this.enqueue(new Callable() {
                     @Override
                     public Object call() throws Exception {
-                        truck.sendInfo();
                         float[] X = carPositionMess.getX();
                         float[] Y = carPositionMess.getY();
                         float[] Z = carPositionMess.getZ();
                         float[][] rot = carPositionMess.getRotation();
+                        for (int i = 0; i < X.length ; i++){
+                            Vector3f playerLocation = playerStore.get(i).getPosition();
+                            if(Math.abs(playerLocation.x - X[i]) > 1.5f || Math.abs(playerLocation.y - Y[i]) > 1.5f || Math.abs(playerLocation.z - Z[i]) > 1.5f){
+                        System.out.println(".call()" + X.length);
+                                playerStore.get(i).setPosition(X[i], Y[i], Z[i]);
+                                playerStore.get(i).setRotation(new Matrix3f(rot[i][0], rot[i][1], rot[i][2],
+                                                                            rot[i][3], rot[i][4], rot[i][5], 
+                                                                            rot[i][6], rot[i][7], rot[i][8]));
+                            }
+                        }
 //                        for(int i = 0; i < 3; i++){
 //                            if(Math.abs(truck.getX()[i] - X[i]) > 1.5f || Math.abs(truck.getY()[i] - Y[i]) > 1.5f || Math.abs(truck.getZ()[i] - Z[i]) > 1.5f){
 //                                truck.moveTo(X[i], Y[i], Z[i], i);

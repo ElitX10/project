@@ -243,11 +243,7 @@ class Game extends BaseAppState{
 }
 
 //-------------------------------------------------PLAYER---------------------------------------------------------------------------------------
-class Player extends BaseAppState{
-    // initial position :
-    private final int X_Tab[] = {110, 110, 126, 126};
-    private final float Z_Tab[] = {-1.5f, -13.5f, -1.5f, -13.5f};
-    private final float Y_Initial = 1;
+class Player extends BaseAppState{    
     
     private Node carNode;
     private VehicleControl player;
@@ -319,11 +315,11 @@ class Player extends BaseAppState{
     protected void onEnable() {        
         NODE_GAME.attachChild(carNode);
         getPhysicsSpace().add(player);
-        player.setPhysicsLocation(new Vector3f(X_Tab[ID -1], Y_Initial, Z_Tab[ID -1]));
+//        player.setPhysicsLocation(new Vector3f(X_Tab[ID -1], Y_Initial, Z_Tab[ID -1]));
 //        player.setPhysicsLocation(new Vector3f(40, 3, 350)); 
-        player.setPhysicsRotation(new Matrix3f( 0, 0, 1,
-                                                0, 1, 0, 
-                                                -1, 0, 0));
+//        player.setPhysicsRotation(new Matrix3f( 0, 0, 1,
+//                                                0, 1, 0, 
+//                                                -1, 0, 0));
     }
 
     @Override
@@ -533,6 +529,10 @@ class Player extends BaseAppState{
     public void setPosition(float X, float Y, float Z){
         player.setPhysicsLocation(new Vector3f(X, Y, Z));
     }
+    
+    public void setRotation(Matrix3f rot){
+        player.setPhysicsRotation(rot);
+    }
 }
 
 //-------------------------------------------------TRUCK---------------------------------------------------------------------------------------
@@ -721,8 +721,7 @@ class Truck extends BaseAppState{
                     for (int colum = 0; colum < 3; colum++){
                         rot[i][j] = rigidOilDrum[i].getPhysicsRotationMatrix().get(row,colum);
                         j++;
-                    }
-                    
+                    }                    
                 }
             }
             DrumPositionMessage posMess = new DrumPositionMessage(X, Y, Z, rot);

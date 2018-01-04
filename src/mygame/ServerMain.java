@@ -7,6 +7,7 @@ package mygame;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.math.Matrix3f;
 import com.jme3.network.ConnectionListener;
 import com.jme3.network.Filters;
 import com.jme3.network.HostedConnection;
@@ -37,8 +38,13 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     private Truck truck;
     private float lowUpdateTimer = 0;
     private float hightUpdateTimer = 0;
-    private float lowUpdateTimerMax = 1;
+    private float lowUpdateTimerMax = 15;
     private float hightUpdateTimerMax = 0.15f;
+    
+    // initial position for player :
+    private final int X_Tab[] = {110, 110, 126, 126};
+    private final float Z_Tab[] = {-1.5f, -13.5f, -1.5f, -13.5f};
+    private final float Y_Initial = 1;
     
     public ServerMain(){
         
@@ -98,6 +104,8 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         }
         if (hightUpdateTimer > hightUpdateTimerMax){
             hightUpdateTimer = 0;
+            sendPlayerPosition();
+            
         }
     }
     
@@ -117,7 +125,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             Player newPlayer = new Player(this, NODE_GAME, bulletAppState, client.getId(), false);       
             stateManager.attach(newPlayer);
             newPlayer.setEnabled(true);
-            playerStore.add(newPlayer);
+            playerStore.add(newPlayer);            
         }else {
             waitingList.add(client.getId()); 
         }        
@@ -146,14 +154,14 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
                 final CarParameterMessage carParamaterMess = (CarParameterMessage) m;
                 Future result = ServerMain.this.enqueue(new Callable() {
                     @Override
-                    public Object call() throws Exception {                        
+                    public Object call() throws Exception {
                         playerStore.get(carParamaterMess.getID()).accelerate(carParamaterMess.getAcceleration());
                         playerStore.get(carParamaterMess.getID()).brake(carParamaterMess.getBrake());
                         playerStore.get(carParamaterMess.getID()).steer(carParamaterMess.getSteer());
                         CarParameterMessage newCarParameterMess = new CarParameterMessage(carParamaterMess.getAcceleration(), carParamaterMess.getSteer(), carParamaterMess.getBrake(), 
                                                                                         carParamaterMess.getStop(), carParamaterMess.getStart(), carParamaterMess.getAccelerationSound(),
                                                                                         carParamaterMess.getID());
-                        myServer.broadcast(Filters.notEqualTo(mySource), newCarParameterMess);                                                                                        
+                        myServer.broadcast(Filters.notEqualTo(mySource), newCarParameterMess);
                         return true;
                     }
                 });
@@ -195,6 +203,37 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             Player newPlayer = new Player(this, NODE_GAME, bulletAppState, waitingList.get(0), false);
             playerStore.add(newPlayer);
             waitingList.remove(0);
+        }
+    }
+    private void sendPlayerPosition(){
+        int arraySize = playerStore.size();
+        float X[] = new float[arraySize];
+        float Y[] = new float[arraySize];
+        float Z[] = new float[arraySize];
+        float[][] rot = new float[arraySize][9];
+        for (int i =0; i<arraySize; i++){
+            X[i] = playerStore.get(i).getPosition().x;
+            Y[i] = playerStore.get(i).getPosition().y;
+            Z[i] = playerStore.get(i).getPosition().z;
+            int j = 0;
+            for (int row = 0; row < 3; row++){
+                for (int colum = 0; colum < 3; colum++){
+                    rot[i][j] = playerStore.get(i).getRotation().get(row,colum);
+                    j++;
+                }                    
+            }
+        }
+        CarPositionMessage newPosition = new CarPositionMessage(X, Y, Z, rot);
+        myServer.broadcast(newPosition);
+    }
+    
+    private void initPlayer(){
+        for(int i = 0; i<playerStore.size(); i++){
+            playerStore.get(i).setEnabled(true);
+            playerStore.get(i).setPosition(X_Tab[i], Y_Initial, Z_Tab[i]);
+            playerStore.get(i).setRotation(new Matrix3f( 0, 0, 1,
+                                                        0, 1, 0, 
+                                                        -1, 0, 0));
         }
     }
 }
