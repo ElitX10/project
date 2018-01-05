@@ -5,12 +5,16 @@
  */
 package mygame;
 
+import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.BaseAppState;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.VehicleControl;
+import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
 import com.jme3.network.Client;
@@ -39,13 +43,16 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     private float steeringValue = 0;
     private float accelerationValue = 0;
     private float brakingValue =0;
-    private int controlledPlayerID = 0; // TODO : set this depending of the information of the server !
+    private int controlledPlayerID = -1; // TODO : set this depending of the information of the server !
+    private BitmapText waitMessage;
     //app state : 
     private ArrayList<Player> playerStore = new ArrayList<Player>();
     private Truck truck; 
+    private ClientRace myRace;
     
     public ClientMain(){
-        
+        myRace = new ClientRace(this, Globals.RACETIME);
+        stateManager.attach(myRace);
     }
     
     public static void main(String[] args) {
@@ -85,7 +92,8 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                                     RandomEventMessage.class,
                                     DrumPositionMessage.class,
                                     CarPositionMessage.class,
-                                    CarParameterMessage.class);
+                                    CarParameterMessage.class,
+                                    timeMessage.class);
 
         //node containing all the other new node on the game :
         rootNode.attachChild(NODE_GAME);  
@@ -98,11 +106,11 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         //create the floor :
         Globals.createScene(NODE_GAME, this, bulletAppState);
         
-        // create a player for testing :
-        Player TestingPlayer = new Player(this, NODE_GAME, bulletAppState, true);       
-        stateManager.attach(TestingPlayer);
-        TestingPlayer.setEnabled(true);
-        playerStore.add(TestingPlayer);
+//        // create a player for testing :
+//        Player TestingPlayer = new Player(this, NODE_GAME, bulletAppState, true);       
+//        stateManager.attach(TestingPlayer);
+//        TestingPlayer.setEnabled(true);
+//        playerStore.add(TestingPlayer);
         
         //create the truck :
         truck = new Truck(this, NODE_GAME, bulletAppState);        
@@ -110,11 +118,20 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         stateManager.attach(truck);
         
         // set up key for controlling the car :
-        setupKeys(true); //TODO : set up key when the race start !!
+//        setupKeys(true); //TODO : set up key when the race start !!
         
+        // sky :
         getRootNode().attachChild(SkyFactory.createSky(getAssetManager(), "Textures/Sky/Bright/BrightSky.dds", SkyFactory.EnvMapType.CubeMap));
+        
+        // hud :
+        initHUD();
     }
 
+    @Override
+    public void simpleUpdate(float tpf) {
+        
+    }
+    
     // to ensure to close the net connection cleanly :
     @Override
     public void destroy() {
@@ -193,6 +210,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                 });
             }else if(m instanceof CarPositionMessage){
                 final CarPositionMessage carPositionMess = (CarPositionMessage) m;
+                final int myHost = myClient.getId();
                 Future result = ClientMain.this.enqueue(new Callable() {
                     @Override
                     public Object call() throws Exception {
@@ -200,16 +218,36 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                         float[] Y = carPositionMess.getY();
                         float[] Z = carPositionMess.getZ();
                         float[][] rot = carPositionMess.getRotation();
-                        for (int i = 0; i < X.length ; i++){
-                            Vector3f playerLocation = playerStore.get(i).getPosition();
-                            if(Math.abs(playerLocation.x - X[i]) > 1.5f || Math.abs(playerLocation.y - Y[i]) > 1.5f || Math.abs(playerLocation.z - Z[i]) > 1.5f){
-                        System.out.println(".call()" + X.length);
-                                playerStore.get(i).setPosition(X[i], Y[i], Z[i]);
-                                playerStore.get(i).setRotation(new Matrix3f(rot[i][0], rot[i][1], rot[i][2],
-                                                                            rot[i][3], rot[i][4], rot[i][5], 
-                                                                            rot[i][6], rot[i][7], rot[i][8]));
+                        
+                        if (playerStore.isEmpty()){
+                            for (int i = 0; i < X.length; i++){
+                                Player newPlayer; 
+                                if (myHost == carPositionMess.getHost()[i]){
+                                    newPlayer = new Player(ClientMain.this, NODE_GAME, bulletAppState, true);
+                                    myRace.setEnabled(true);
+                                    guiNode.detachChildNamed(waitMessage.getName());
+                                    setupKeys(true);
+                                    controlledPlayerID = i;
+                                }else{
+                                    newPlayer = new Player(ClientMain.this, NODE_GAME, bulletAppState, false);
+                                }
+                                stateManager.attach(newPlayer);
+                                newPlayer.setEnabled(true);
+                                playerStore.add(newPlayer);
+                            }
+                        }else {
+                            for (int i = 0; i < X.length ; i++){
+                                Vector3f playerLocation = playerStore.get(i).getPosition();
+                                if(Math.abs(playerLocation.x - X[i]) > 1.5f || Math.abs(playerLocation.y - Y[i]) > 1.5f || Math.abs(playerLocation.z - Z[i]) > 1.5f){
+                                    playerStore.get(i).setPosition(X[i], Y[i], Z[i]);
+                                    playerStore.get(i).setRotation(new Matrix3f(rot[i][0], rot[i][1], rot[i][2],
+                                                                                rot[i][3], rot[i][4], rot[i][5], 
+                                                                                rot[i][6], rot[i][7], rot[i][8]));
+                                }
                             }
                         }
+                        
+                        
 //                        for(int i = 0; i < 3; i++){
 //                            if(Math.abs(truck.getX()[i] - X[i]) > 1.5f || Math.abs(truck.getY()[i] - Y[i]) > 1.5f || Math.abs(truck.getZ()[i] - Z[i]) > 1.5f){
 //                                truck.moveTo(X[i], Y[i], Z[i], i);
@@ -219,9 +257,29 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                         return true;
                     }
                 });
+            }else if (m instanceof timeMessage){
+                final timeMessage timeMess = (timeMessage) m;
+                Future result = ClientMain.this.enqueue(new Callable() {
+                    @Override
+                    public Object call() throws Exception {
+                                                
+                        return true;
+                    }
+                });
             }
         }
         
+    }
+    
+    private void initHUD(){
+        waitMessage = new BitmapText(guiFont);
+        waitMessage.setName("waitMessage");
+        waitMessage.setSize(guiFont.getCharSet().getRenderedSize());
+        waitMessage.setColor(ColorRGBA.Blue);
+        waitMessage.setText("Player waiting");
+        waitMessage.setLocalTranslation(settings.getWidth() / 2, settings.getHeight() / 2, 0);
+        guiNode.attachChild(waitMessage);
+//        guiNode.detachChildNamed(waitMessage.getName());
     }
     
     private void setupKeys(boolean turnOn) {
@@ -346,4 +404,61 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
             myClient.send(carParameter);
         } 
     };
+    
+    public void resetPlayerStore(){
+        setupKeys(false);
+        playerStore.clear();
+    }
+}
+
+//-------------------------------------------------GAME---------------------------------------------------------------------------------------
+class ClientRace extends BaseAppState{
+    private ClientMain myApp;
+    private int maxTime = 0;
+    private float currentTime;
+    private final float saveTime;
+    
+    public ClientRace(ClientMain app, int raceTime){
+        myApp = app;
+        currentTime = raceTime;
+        saveTime = raceTime;
+    }
+    
+    @Override
+    protected void initialize(Application app) {
+        
+    }
+
+    @Override
+    public void update(float tpf) {
+        currentTime -= tpf;
+        if(currentTime < maxTime){
+            currentTime = saveTime;
+            this.setEnabled(false);
+        }
+    }
+    
+    @Override
+    protected void cleanup(Application app) {
+        
+    }
+
+    @Override
+    protected void onEnable() {
+//        myApp.setNewPlayer();
+//        myApp.initPlayer();
+    }
+
+    @Override
+    protected void onDisable() {        
+        myApp.resetPlayerStore();
+    }
+    
+    public float getTime(){
+        return currentTime;
+    }
+    
+    public void setTime(float time){
+        currentTime = time;
+    }
 }

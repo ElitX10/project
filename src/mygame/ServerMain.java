@@ -5,7 +5,9 @@
  */
 package mygame;
 
+import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.BaseAppState;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.math.Matrix3f;
 import com.jme3.network.ConnectionListener;
@@ -38,16 +40,20 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     private Truck truck;
     private float lowUpdateTimer = 0;
     private float hightUpdateTimer = 0;
-    private float lowUpdateTimerMax = 15;
+    private float lowUpdateTimerMax = 1;
     private float hightUpdateTimerMax = 0.15f;
+    private float pauseTime = 10;
     
     // initial position for player :
     private final int X_Tab[] = {110, 110, 126, 126};
     private final float Z_Tab[] = {-1.5f, -13.5f, -1.5f, -13.5f};
     private final float Y_Initial = 1;
+    private final Race myRace;
     
     public ServerMain(){
-        
+        myRace = new Race(this, Globals.RACETIME);
+        stateManager.attach(myRace);
+        myRace.setEnabled(false);
     }
     
     public static void main(String[] args) {
@@ -84,13 +90,25 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         Globals.createScene(NODE_GAME, this, bulletAppState);
         
         //create the truck :
-        truck = new Truck(this, NODE_GAME, bulletAppState);        
-        truck.setEnabled(true);
+        truck = new Truck(this, NODE_GAME, bulletAppState);
         stateManager.attach(truck);
     }
 
     @Override
     public void simpleUpdate(float tpf) {
+        if (!myRace.isEnabled()){ 
+            if(truck.isEnabled()){
+                truck.setEnabled(false);
+            }
+            pauseTime -= tpf;
+            
+            if (pauseTime < 0 && !myRace.isEnabled()){
+                pauseTime = 30;
+                myRace.setEnabled(true);        
+                truck.setEnabled(true);
+            }
+        }  
+        
         lowUpdateTimer += tpf;
         hightUpdateTimer += tpf;
         // broadcast message all the time :
@@ -104,9 +122,17 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         }
         if (hightUpdateTimer > hightUpdateTimerMax){
             hightUpdateTimer = 0;
-            sendPlayerPosition();
-            
+            timeMessage timeMess;
+            if(myRace.isEnabled()){
+                timeMess = new timeMessage(myRace.getTime(), true);
+                sendPlayerPosition();
+            }else {
+                timeMess = new timeMessage(pauseTime, false);
+            }
+            myServer.broadcast(timeMess);
+            // TODO : send time
         }
+        
     }
     
     // to ensure to close the net connection cleanly :
@@ -121,7 +147,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     @Override
     public void connectionAdded(Server server, HostedConnection client) {
         // create players :
-        if(playerStore.size() < 4){
+        if(playerStore.size() < 4 && !myRace.isEnabled()){
             Player newPlayer = new Player(this, NODE_GAME, bulletAppState, client.getId(), false);       
             stateManager.attach(newPlayer);
             newPlayer.setEnabled(true);
@@ -191,7 +217,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         return myServer;
     } 
     
-    private void setNewPlayer(){
+    public void setNewPlayer(){
         // remove players that have left the game :
         for(int i = playerStore.size() - 1; i>= 0; i--){
             if(!playerStore.get(i).isEnabled()){
@@ -211,10 +237,13 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         float Y[] = new float[arraySize];
         float Z[] = new float[arraySize];
         float[][] rot = new float[arraySize][9];
+        int[] host = new int[arraySize];
+        
         for (int i =0; i<arraySize; i++){
             X[i] = playerStore.get(i).getPosition().x;
             Y[i] = playerStore.get(i).getPosition().y;
             Z[i] = playerStore.get(i).getPosition().z;
+            host[i] = playerStore.get(i).getHostNum();
             int j = 0;
             for (int row = 0; row < 3; row++){
                 for (int colum = 0; colum < 3; colum++){
@@ -223,11 +252,11 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
                 }                    
             }
         }
-        CarPositionMessage newPosition = new CarPositionMessage(X, Y, Z, rot);
+        CarPositionMessage newPosition = new CarPositionMessage(X, Y, Z, rot, host);
         myServer.broadcast(newPosition);
     }
     
-    private void initPlayer(){
+    public void initPlayer(){
         for(int i = 0; i<playerStore.size(); i++){
             playerStore.get(i).setEnabled(true);
             playerStore.get(i).setPosition(X_Tab[i], Y_Initial, Z_Tab[i]);
@@ -235,5 +264,53 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
                                                         0, 1, 0, 
                                                         -1, 0, 0));
         }
+    }
+}
+
+//-------------------------------------------------GAME---------------------------------------------------------------------------------------
+class Race extends BaseAppState{
+    private ServerMain myApp;
+    private int maxTime = 0;
+    private float currentTime;
+    private final float saveTime;
+    
+    public Race(ServerMain app, int raceTime){
+        myApp = app;
+        currentTime = raceTime;
+        saveTime = raceTime;
+    }
+    
+    @Override
+    protected void initialize(Application app) {
+        
+    }
+
+    @Override
+    public void update(float tpf) {
+        currentTime -= tpf;
+        if(currentTime < maxTime){
+            currentTime = saveTime;
+            this.setEnabled(false);
+        }
+    }
+    
+    @Override
+    protected void cleanup(Application app) {
+        
+    }
+
+    @Override
+    protected void onEnable() {
+        myApp.setNewPlayer();
+        myApp.initPlayer();
+    }
+
+    @Override
+    protected void onDisable() {
+        // TODO : send end of the race :
+    }
+    
+    public float getTime(){
+        return currentTime;
     }
 }

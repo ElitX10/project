@@ -49,12 +49,15 @@ public class Globals {
     public static final int VERSION = 1;
     public static final int DEFAULT_PORT = 6143;
     
+    public static final int RACETIME = 60;
+    
     // register all message types there are
     public static void initialiseSerializables() {
         Serializer.registerClass(RandomEventMessage.class);
         Serializer.registerClass(DrumPositionMessage.class);
         Serializer.registerClass(CarPositionMessage.class);
         Serializer.registerClass(CarParameterMessage.class);
+        Serializer.registerClass(timeMessage.class);
     }
     
     public static void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
@@ -128,16 +131,18 @@ public class Globals {
         private float Y_Pos[];
         private float Z_Pos[];
         private float rotation[][];
+        private int host[];
         
         public CarPositionMessage(){
             
         }
         
-        public CarPositionMessage(float X[], float Y[], float Z[], float rot[][]){
+        public CarPositionMessage(float X[], float Y[], float Z[], float rot[][], int playerHost[]){
             X_Pos = X;
             Y_Pos = Y;
             Z_Pos = Z;
             rotation = rot;
+            host = playerHost;
         }
         
         public float[] getX(){
@@ -154,6 +159,10 @@ public class Globals {
         
         public float[][] getRotation(){
             return rotation;
+        }
+        
+        public int[] getHost(){
+            return host;
         }
     }
     
@@ -210,6 +219,31 @@ public class Globals {
             return accelerationSound;
         }
     }
+    
+    @Serializable
+    public static class timeMessage extends AbstractMessage{
+        private float time;
+        private boolean raceOn;
+        
+        public timeMessage(){
+            
+        }
+        
+        public timeMessage(float currentTime, boolean race){
+            time = currentTime;
+            raceOn = race;
+        }
+        
+        public float getTime(){
+            return time;
+        }
+        
+        public boolean getRaceOn(){
+            return raceOn;
+        }
+    }
+    
+    
 }
 
 //-------------------------------------------------GAME---------------------------------------------------------------------------------------
@@ -558,7 +592,7 @@ class Truck extends BaseAppState{
 //    private double distance;
 //    private float timeToNextStep;
     private final Random myRand = new Random();
-    private final int randomTimerDelay = myRand.nextInt((10 - 8) + 1) + 8; //myRand.nextInt((60 - 25) + 1) + 25
+    private final int randomTimerDelay = myRand.nextInt((60 - 10) + 1) + 10; //myRand.nextInt((60 - 25) + 1) + 25
     private float randomTimer = 0;
 //    private boolean move = false;
     private final BulletAppState myBulletAppState;
