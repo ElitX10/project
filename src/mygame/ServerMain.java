@@ -103,7 +103,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             pauseTime -= tpf;
             
             if (pauseTime < 0 && !myRace.isEnabled()){
-                pauseTime = 30;
+                pauseTime = 10;
                 myRace.setEnabled(true);        
                 truck.setEnabled(true);
             }
@@ -122,15 +122,14 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         }
         if (hightUpdateTimer > hightUpdateTimerMax){
             hightUpdateTimer = 0;
-            timeMessage timeMess;
+            TimeMessage timeMess;
             if(myRace.isEnabled()){
-                timeMess = new timeMessage(myRace.getTime(), true);
+                timeMess = new TimeMessage(myRace.getTime(), true);
                 sendPlayerPosition();
             }else {
-                timeMess = new timeMessage(pauseTime, false);
+                timeMess = new TimeMessage(pauseTime, false);
             }
             myServer.broadcast(timeMess);
-            // TODO : send time
         }
         
     }
@@ -169,6 +168,11 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             int indexInWaitingList = getIndexOfWaitingList(client.getId());
             waitingList.remove(indexInWaitingList);
         }
+    }
+
+    public void sendScoreMess() {
+        ScoreMessage newMess = new ScoreMessage();
+        myServer.broadcast(newMess);
     }
     
     public class ServerListener implements MessageListener<HostedConnection>{
@@ -227,6 +231,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         // add player from the waiting list :        
         while(waitingList.size() > 0 && playerStore.size() < 4){
             Player newPlayer = new Player(this, NODE_GAME, bulletAppState, waitingList.get(0), false);
+            stateManager.attach(newPlayer);
             playerStore.add(newPlayer);
             waitingList.remove(0);
         }
@@ -258,7 +263,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     
     public void initPlayer(){
         for(int i = 0; i<playerStore.size(); i++){
-            playerStore.get(i).setEnabled(true);
+            playerStore.get(i).setEnabled(true);            
             playerStore.get(i).setPosition(X_Tab[i], Y_Initial, Z_Tab[i]);
             playerStore.get(i).setRotation(new Matrix3f( 0, 0, 1,
                                                         0, 1, 0, 
@@ -301,12 +306,15 @@ class Race extends BaseAppState{
 
     @Override
     protected void onEnable() {
-        myApp.setNewPlayer();
+//        myApp.setNewPlayer();
         myApp.initPlayer();
+        
     }
 
     @Override
     protected void onDisable() {
+        myApp.sendScoreMess();
+        myApp.setNewPlayer();
         // TODO : send end of the race :
     }
     

@@ -25,6 +25,7 @@ import com.jme3.network.Network;
 import com.jme3.scene.Node;
 import com.jme3.util.SkyFactory;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -45,10 +46,14 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     private float brakingValue =0;
     private int controlledPlayerID = -1; // TODO : set this depending of the information of the server !
     private BitmapText waitMessage;
+    DecimalFormat df = new DecimalFormat("0.0 s");
+    private float myTime = 0;
+    private BitmapText timeHUD;
     //app state : 
     private ArrayList<Player> playerStore = new ArrayList<Player>();
     private Truck truck; 
     private ClientRace myRace;
+    
     
     public ClientMain(){
         myRace = new ClientRace(this, Globals.RACETIME);
@@ -93,7 +98,8 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                                     DrumPositionMessage.class,
                                     CarPositionMessage.class,
                                     CarParameterMessage.class,
-                                    timeMessage.class);
+                                    TimeMessage.class,
+                                    ScoreMessage.class);
 
         //node containing all the other new node on the game :
         rootNode.attachChild(NODE_GAME);  
@@ -125,11 +131,22 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         
         // hud :
         initHUD();
+        
+        flyCam.setEnabled(false);
+        setDisplayStatView(false);
+        setDisplayFps(false);
+        setPauseOnLostFocus(false);
     }
 
     @Override
     public void simpleUpdate(float tpf) {
+        myTime -= tpf;
+        timeHUD.setText("Time : " + df.format(myTime));
         
+        if (controlledPlayerID < 0){
+            
+            cam.setLocation(new Vector3f(0, 4, 30));
+        }
     }
     
     // to ensure to close the net connection cleanly :
@@ -186,25 +203,27 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                 final CarParameterMessage carParamaterMess = (CarParameterMessage) m;
                 Future result = ClientMain.this.enqueue(new Callable() {
                     @Override
-                    public Object call() throws Exception {                        
-                        playerStore.get(carParamaterMess.getID()).accelerate(carParamaterMess.getAcceleration());
-                        playerStore.get(carParamaterMess.getID()).brake(carParamaterMess.getBrake());
-                        playerStore.get(carParamaterMess.getID()).steer(carParamaterMess.getSteer());
-                        if(carParamaterMess.getStart()){
-                            playerStore.get(carParamaterMess.getID()).playStartSoundNode();
-                        }else{
-                            playerStore.get(carParamaterMess.getID()).stopStartSoundNode();
-                        } 
-                        if(carParamaterMess.getStop()){
-                            playerStore.get(carParamaterMess.getID()).playStopSoundNode();
-                        }else{
-                            playerStore.get(carParamaterMess.getID()).stopStopSoundNode();
-                        } 
-                        if(carParamaterMess.getAccelerationSound()){
-                            playerStore.get(carParamaterMess.getID()).playAccelerationSoundNode();
-                        }else{
-                            playerStore.get(carParamaterMess.getID()).stopAccelerationSoundNode();
-                        } 
+                    public Object call() throws Exception {
+                        if (!playerStore.isEmpty()){
+                            playerStore.get(carParamaterMess.getID()).accelerate(carParamaterMess.getAcceleration());
+                            playerStore.get(carParamaterMess.getID()).brake(carParamaterMess.getBrake());
+                            playerStore.get(carParamaterMess.getID()).steer(carParamaterMess.getSteer());
+                            if(carParamaterMess.getStart()){
+                                playerStore.get(carParamaterMess.getID()).playStartSoundNode();
+                            }else{
+                                playerStore.get(carParamaterMess.getID()).stopStartSoundNode();
+                            } 
+                            if(carParamaterMess.getStop()){
+                                playerStore.get(carParamaterMess.getID()).playStopSoundNode();
+                            }else{
+                                playerStore.get(carParamaterMess.getID()).stopStopSoundNode();
+                            } 
+                            if(carParamaterMess.getAccelerationSound()){
+                                playerStore.get(carParamaterMess.getID()).playAccelerationSoundNode();
+                            }else{
+                                playerStore.get(carParamaterMess.getID()).stopAccelerationSoundNode();
+                            } 
+                        }
                         return true;
                     }
                 });
@@ -246,8 +265,6 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                                 }
                             }
                         }
-                        
-                        
 //                        for(int i = 0; i < 3; i++){
 //                            if(Math.abs(truck.getX()[i] - X[i]) > 1.5f || Math.abs(truck.getY()[i] - Y[i]) > 1.5f || Math.abs(truck.getZ()[i] - Z[i]) > 1.5f){
 //                                truck.moveTo(X[i], Y[i], Z[i], i);
@@ -257,29 +274,48 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                         return true;
                     }
                 });
-            }else if (m instanceof timeMessage){
-                final timeMessage timeMess = (timeMessage) m;
+            }else if (m instanceof TimeMessage){
+                final TimeMessage timeMess = (TimeMessage) m;
                 Future result = ClientMain.this.enqueue(new Callable() {
                     @Override
                     public Object call() throws Exception {
-                                                
+                        setTime(timeMess.getTime());
+                        return true;
+                    }
+                });
+            }else if (m instanceof ScoreMessage){
+                final ScoreMessage scoreMess = (ScoreMessage) m;                
+                Future result = ClientMain.this.enqueue(new Callable() {
+                    @Override
+                    public Object call() throws Exception {
+                        myRace.setEnabled(false);
+                        guiNode.attachChild(waitMessage);
                         return true;
                     }
                 });
             }
         }
-        
+        private void setTime(float newTime){
+            myTime = newTime;
+        }
     }
     
     private void initHUD(){
         waitMessage = new BitmapText(guiFont);
         waitMessage.setName("waitMessage");
-        waitMessage.setSize(guiFont.getCharSet().getRenderedSize());
+        waitMessage.setSize(guiFont.getCharSet().getRenderedSize() * 3);
         waitMessage.setColor(ColorRGBA.Blue);
         waitMessage.setText("Player waiting");
-        waitMessage.setLocalTranslation(settings.getWidth() / 2, settings.getHeight() / 2, 0);
+        waitMessage.setLocalTranslation(settings.getWidth() / 2 - waitMessage.getLineWidth() / 2, settings.getHeight() / 2 , 0);
         guiNode.attachChild(waitMessage);
 //        guiNode.detachChildNamed(waitMessage.getName());
+
+        timeHUD = new BitmapText(guiFont);
+        timeHUD.setSize(guiFont.getCharSet().getRenderedSize() * 2);
+        timeHUD.setColor(ColorRGBA.Blue);
+        timeHUD.setText("Time : " + df.format(myTime));
+        timeHUD.setLocalTranslation(10, settings.getHeight(), 0);
+        guiNode.attachChild(timeHUD);
     }
     
     private void setupKeys(boolean turnOn) {
@@ -406,6 +442,9 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     };
     
     public void resetPlayerStore(){
+        for (int i = 0; i < playerStore.size(); i++){
+            playerStore.get(i).setEnabled(false);
+        }
         setupKeys(false);
         playerStore.clear();
     }

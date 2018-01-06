@@ -49,7 +49,7 @@ public class Globals {
     public static final int VERSION = 1;
     public static final int DEFAULT_PORT = 6143;
     
-    public static final int RACETIME = 60;
+    public static final int RACETIME = 20;
     
     // register all message types there are
     public static void initialiseSerializables() {
@@ -57,7 +57,9 @@ public class Globals {
         Serializer.registerClass(DrumPositionMessage.class);
         Serializer.registerClass(CarPositionMessage.class);
         Serializer.registerClass(CarParameterMessage.class);
-        Serializer.registerClass(timeMessage.class);
+        Serializer.registerClass(TimeMessage.class);
+        Serializer.registerClass(ScoreMessage.class);
+
     }
     
     public static void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
@@ -88,6 +90,13 @@ public class Globals {
     @Serializable
     public static class RandomEventMessage extends AbstractMessage{
         
+    }
+    
+    @Serializable
+    public static class ScoreMessage extends AbstractMessage{
+        public ScoreMessage(){
+            
+        }
     }
     
     @Serializable
@@ -221,15 +230,15 @@ public class Globals {
     }
     
     @Serializable
-    public static class timeMessage extends AbstractMessage{
+    public static class TimeMessage extends AbstractMessage{
         private float time;
         private boolean raceOn;
         
-        public timeMessage(){
+        public TimeMessage(){
             
         }
         
-        public timeMessage(float currentTime, boolean race){
+        public TimeMessage(float currentTime, boolean race){
             time = currentTime;
             raceOn = race;
         }
@@ -294,6 +303,7 @@ class Player extends BaseAppState{
     private static int numberOfPlayer = 0;
     private boolean isConnected = true;
     private final boolean isControlled;
+    private AudioNode engineNoiseNode;
     
     public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState, boolean control){
         myApp = app;
@@ -333,6 +343,7 @@ class Player extends BaseAppState{
     @Override
     protected void initialize(Application app) {
         buildPlayer(isControlled);
+        System.out.println("mygame.Player.initialize()");
     }
 
     @Override
@@ -358,6 +369,12 @@ class Player extends BaseAppState{
 
     @Override
     protected void onDisable() {
+        if (!(myApp instanceof ServerMain)){
+            accelerationSoundNode.stop();
+            startSoundNode.stop();
+            stopSoundNode.stop();
+        }
+        
         NODE_GAME.detachChild(carNode);
         getPhysicsSpace().remove(player);
         isConnected = false;
@@ -436,16 +453,14 @@ class Player extends BaseAppState{
         
         
         // car sound :
-        AudioNode engineNoiseNode = new AudioNode(myApp.getAssetManager(), "Sounds/engineNoise.ogg");
+        engineNoiseNode = new AudioNode(myApp.getAssetManager(), "Sounds/engineNoise.ogg");
         engineNoiseNode.setPositional(true);
         engineNoiseNode.setLooping(true);
         engineNoiseNode.setVolume(0.1f);
         carNode.attachChild(engineNoiseNode);
-        if (myApp instanceof ServerMain){
-            
-        }else{
+        if (!(myApp instanceof ServerMain)){
             engineNoiseNode.play();
-        }        
+        }       
         
         accelerationSoundNode = new AudioNode(myApp.getAssetManager(), "Sounds/acceleration.ogg");
         accelerationSoundNode.setPositional(true);
