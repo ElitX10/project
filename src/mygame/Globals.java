@@ -20,6 +20,7 @@ import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
+import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
@@ -95,7 +96,8 @@ public class Globals {
         Geometry checkpointGeom2 = new Geometry("Checkpoint2", checkpoint);
         
         Material matCheckpoint = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        matCheckpoint.setColor("Color", ColorRGBA.Blue);
+        matCheckpoint.setColor("Color", new ColorRGBA(0, 1, 0, 0.35f));
+        matCheckpoint.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
         checkpointGeom1.setMaterial(matCheckpoint);
         checkpointGeom2.setMaterial(matCheckpoint);
         
@@ -309,7 +311,7 @@ public class Globals {
         
         public int getResults(int i){
             for(int j = 0; j < results.length; j++){
-                if(j == results[i]){
+                if(results[j] == i){
                     return j + 1;
                 }
             }

@@ -59,7 +59,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     Geometry checkpoint1;
     Geometry checkpoint2;
     private int lap = 0;
-    private int nextCheckpoint = 0;
+    private int nextCheckpoint = 1;
     private int ResetTime = 0;
     private boolean finished = false;
     
@@ -127,7 +127,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         checkpointNode = (Node) NODE_GAME.getChild("checkpoint");
         checkpoint1 = (Geometry) checkpointNode.getChild("Checkpoint1");
         checkpoint2 = (Geometry) checkpointNode.getChild("Checkpoint2");
-        //checkpointNode.detachChildNamed("Checkpoint1");
+        checkpointNode.detachChildNamed("Checkpoint1");
         
 //        // create a player for testing :
 //        Player TestingPlayer = new Player(this, NODE_GAME, bulletAppState, true);       
