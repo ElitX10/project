@@ -34,6 +34,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     private Server myServer;
     private ArrayList<Player> playerStore = new ArrayList<Player>();
     private ArrayList<Integer> waitingList = new ArrayList<Integer>();
+    private ArrayList<Integer> winnerList = new ArrayList<Integer>();
     private Object myGlobals = new Globals();
     private Node NODE_GAME = new Node("NODE_GAME");
     private BulletAppState bulletAppState;
@@ -42,7 +43,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     private float hightUpdateTimer = 0;
     private float lowUpdateTimerMax = 1;
     private float hightUpdateTimerMax = 0.15f;
-    private float pauseTime = 10;
+    private float pauseTime = 15;
     
     // initial position for player :
     private final int X_Tab[] = {110, 110, 126, 126};
@@ -79,7 +80,8 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
         
         // add message listenter : 
         myServer.addMessageListener(new ServerListener(),
-                                    CarParameterMessage.class);
+                                    CarParameterMessage.class,
+                                    FinishMessage.class);
 
         // init bulletAppState :
         bulletAppState = new BulletAppState();
@@ -100,12 +102,14 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
             if(truck.isEnabled()){
                 truck.setEnabled(false);
             }
-            pauseTime -= tpf;
-            
-            if (pauseTime < 0 && !myRace.isEnabled()){
-                pauseTime = 10;
-                myRace.setEnabled(true);        
-                truck.setEnabled(true);
+            if(!playerStore.isEmpty()){
+                pauseTime -= tpf;
+
+                if (pauseTime < 0 && !myRace.isEnabled()){
+                    pauseTime = 10;
+                    myRace.setEnabled(true);        
+                    truck.setEnabled(true);
+                }
             }
         }  
         
@@ -192,6 +196,24 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
                                                                                         carParamaterMess.getStop(), carParamaterMess.getStart(), carParamaterMess.getAccelerationSound(),
                                                                                         carParamaterMess.getID());
                         myServer.broadcast(Filters.notEqualTo(mySource), newCarParameterMess);
+                        return true;
+                    }
+                });
+            }
+            if(m instanceof FinishMessage){
+                final FinishMessage finishMess = (FinishMessage) m;
+                Future result = ServerMain.this.enqueue(new Callable() {
+                    @Override
+                    public Object call() throws Exception{
+                        winnerList.add(finishMess.getPlayerID());
+                        if(winnerList.size() == playerStore.size()){
+                            int[] raceResults = new int[winnerList.size()];
+                            for(int i = 0; i < winnerList.size(); i++){
+                                raceResults[i] = winnerList.get(i);
+                                ResultMessage resultMess = new ResultMessage(raceResults);
+                                myServer.broadcast(resultMess);
+                            }
+                        }
                         return true;
                     }
                 });

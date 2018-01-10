@@ -22,6 +22,7 @@ import com.jme3.network.ClientStateListener;
 import com.jme3.network.Message;
 import com.jme3.network.MessageListener;
 import com.jme3.network.Network;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.util.SkyFactory;
 import java.io.IOException;
@@ -53,6 +54,14 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     private ArrayList<Player> playerStore = new ArrayList<Player>();
     private Truck truck; 
     private ClientRace myRace;
+    
+    Node checkpointNode;
+    Geometry checkpoint1;
+    Geometry checkpoint2;
+    private int lap = 0;
+    private int nextCheckpoint = 0;
+    private int ResetTime = 0;
+    private boolean finished = false;
     
     
     public ClientMain(){
@@ -99,7 +108,8 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                                     CarPositionMessage.class,
                                     CarParameterMessage.class,
                                     TimeMessage.class,
-                                    ScoreMessage.class);
+                                    ScoreMessage.class,
+                                    ResultMessage.class);
 
         //node containing all the other new node on the game :
         rootNode.attachChild(NODE_GAME);  
@@ -111,6 +121,13 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         
         //create the floor :
         Globals.createScene(NODE_GAME, this, bulletAppState);
+        
+        //Checkpoints
+        Globals.createCheckpoint(NODE_GAME, this, bulletAppState);
+        checkpointNode = (Node) NODE_GAME.getChild("checkpoint");
+        checkpoint1 = (Geometry) checkpointNode.getChild("Checkpoint1");
+        checkpoint2 = (Geometry) checkpointNode.getChild("Checkpoint2");
+        //checkpointNode.detachChildNamed("Checkpoint1");
         
 //        // create a player for testing :
 //        Player TestingPlayer = new Player(this, NODE_GAME, bulletAppState, true);       
@@ -146,7 +163,40 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         if (controlledPlayerID < 0){
             
             cam.setLocation(new Vector3f(0, 4, 30));
+        }else{
+            if(nextCheckpoint == 0){
+                if(checkpoint1.getWorldBound().intersects(playerStore.get(controlledPlayerID).getPosition())){
+                    System.out.println("checked");
+                    nextCheckpoint = 1;
+                    lap += 1;
+                    checkpointNode.attachChild(checkpoint2);
+                    checkpointNode.detachChildNamed("Checkpoint1");       
+                }
+            }
+            else if(nextCheckpoint == 1){
+                if(checkpoint2.getWorldBound().intersects(playerStore.get(controlledPlayerID).getPosition())){
+                    System.out.println("checked");
+                    nextCheckpoint = 0;    
+                    checkpointNode.attachChild(checkpoint1);
+                    checkpointNode.detachChildNamed("Checkpoint2");
+                }
+            }
+            if(lap == 1){
+                if(!finished){
+                    System.out.println("You Win!");
+                    FinishMessage finishMess = new FinishMessage(myTime, controlledPlayerID);
+                    myClient.send(finishMess);
+                    finished = true;
+                }
+            }
+//            if(ResetTime == 15){
+//                ResetLoc = player.getPhysicsLocation();
+//                ResetTime = 0;
+//            }else{
+//                ResetTime += 1;
+//            }
         }
+
     }
     
     // to ensure to close the net connection cleanly :
@@ -293,7 +343,22 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                         return true;
                     }
                 });
-            }
+            }else if (m instanceof ResultMessage){
+            final ResultMessage raceResults = (ResultMessage) m;
+            Future result = ClientMain.this.enqueue(new Callable() {
+               @Override
+               public Object call() throws Exception{
+                    BitmapText results = new BitmapText(guiFont);
+                    results.setSize(guiFont.getCharSet().getRenderedSize() * 2);
+                    results.setColor(ColorRGBA.Blue);
+                    results.setText("You got position " + raceResults.getResults(controlledPlayerID));
+                    results.setLocalTranslation(settings.getWidth() / 2 - waitMessage.getLineWidth() / 2, settings.getHeight() / 2 , 0);
+                    guiNode.attachChild(results);
+                   
+                   return true;
+               }
+            });
+        }
         }
         private void setTime(float newTime){
             myTime = newTime;

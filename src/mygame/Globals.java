@@ -34,6 +34,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.CameraControl.ControlDirection;
+import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Cylinder;
 import java.util.Random;
 import mygame.Globals.*;
@@ -49,7 +50,7 @@ public class Globals {
     public static final int VERSION = 1;
     public static final int DEFAULT_PORT = 6143;
     
-    public static final int RACETIME = 20;
+    public static final int RACETIME = 180;
     
     // register all message types there are
     public static void initialiseSerializables() {
@@ -59,7 +60,8 @@ public class Globals {
         Serializer.registerClass(CarParameterMessage.class);
         Serializer.registerClass(TimeMessage.class);
         Serializer.registerClass(ScoreMessage.class);
-
+        Serializer.registerClass(FinishMessage.class);
+        Serializer.registerClass(ResultMessage.class);
     }
     
     public static void createScene(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
@@ -85,6 +87,26 @@ public class Globals {
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
         GameNode.addLight(dl);
+    }
+    
+    public static void createCheckpoint(Node GameNode, SimpleApplication myApp, BulletAppState bulletAppState){
+        Box checkpoint = new Box(5,1,12);
+        Geometry checkpointGeom1 = new Geometry("Checkpoint1", checkpoint);
+        Geometry checkpointGeom2 = new Geometry("Checkpoint2", checkpoint);
+        
+        Material matCheckpoint = new Material(myApp.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        matCheckpoint.setColor("Color", ColorRGBA.Blue);
+        checkpointGeom1.setMaterial(matCheckpoint);
+        checkpointGeom2.setMaterial(matCheckpoint);
+        
+        checkpointGeom1.setLocalTranslation(80f,1f,-8f);
+        checkpointGeom2.setLocalTranslation(235.47f, 1f, 352.41f);
+        
+        Node checkpointNode = new Node("checkpoint");
+          
+        checkpointNode.attachChild(checkpointGeom1);
+        checkpointNode.attachChild(checkpointGeom2);
+        GameNode.attachChild(checkpointNode);
     }
     
     @Serializable
@@ -249,6 +271,49 @@ public class Globals {
         
         public boolean getRaceOn(){
             return raceOn;
+        }
+    }
+    
+    @Serializable
+    public static class FinishMessage extends AbstractMessage{
+        private float time;
+        private int PlayerID;
+        
+        public FinishMessage(){
+            
+        }
+        public FinishMessage(float remainTime, int PlayerID){
+            time = RACETIME;
+            this.PlayerID = PlayerID;
+        }
+        
+        public float getTime(){
+            return time;
+        }
+        
+        public int getPlayerID(){
+            return PlayerID;
+        }
+    }
+    
+    @Serializable
+    public static class ResultMessage extends AbstractMessage{
+        public int[] results;
+        
+        public ResultMessage(){
+            
+        }
+        public ResultMessage(int[] result){
+            results = result;
+        }
+        
+        public int getResults(int i){
+            for(int j = 0; j < results.length; j++){
+                if(j == results[i]){
+                    return j + 1;
+                }
+            }
+            return 0;
         }
     }
     
@@ -582,6 +647,7 @@ class Player extends BaseAppState{
     public void setRotation(Matrix3f rot){
         player.setPhysicsRotation(rot);
     }
+   
 }
 
 //-------------------------------------------------TRUCK---------------------------------------------------------------------------------------
