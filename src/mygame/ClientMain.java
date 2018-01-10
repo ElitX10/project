@@ -153,6 +153,8 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         setDisplayStatView(false);
         setDisplayFps(false);
         setPauseOnLostFocus(false);
+        
+        finished = false;
     }
 
     @Override
