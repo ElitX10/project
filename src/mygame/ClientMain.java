@@ -164,37 +164,39 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
             
             cam.setLocation(new Vector3f(0, 4, 30));
         }else{
-            if(nextCheckpoint == 0){
-                if(checkpoint1.getWorldBound().intersects(playerStore.get(controlledPlayerID).getPosition())){
-                    System.out.println("checked");
-                    nextCheckpoint = 1;
-                    lap += 1;
-                    checkpointNode.attachChild(checkpoint2);
-                    checkpointNode.detachChildNamed("Checkpoint1");       
+            if(myRace.isEnabled()){
+                if(nextCheckpoint == 0){
+                    if(checkpoint1.getWorldBound().intersects(playerStore.get(controlledPlayerID).getPosition())){
+                        System.out.println("checked");
+                        nextCheckpoint = 1;
+                        lap += 1;
+                        checkpointNode.attachChild(checkpoint2);
+                        checkpointNode.detachChildNamed("Checkpoint1");       
+                    }
                 }
-            }
-            else if(nextCheckpoint == 1){
-                if(checkpoint2.getWorldBound().intersects(playerStore.get(controlledPlayerID).getPosition())){
-                    System.out.println("checked");
-                    nextCheckpoint = 0;    
-                    checkpointNode.attachChild(checkpoint1);
-                    checkpointNode.detachChildNamed("Checkpoint2");
+                else if(nextCheckpoint == 1){
+                    if(checkpoint2.getWorldBound().intersects(playerStore.get(controlledPlayerID).getPosition())){
+                        System.out.println("checked");
+                        nextCheckpoint = 0;    
+                        checkpointNode.attachChild(checkpoint1);
+                        checkpointNode.detachChildNamed("Checkpoint2");
+                    }
                 }
-            }
-            if(lap == 1){
-                if(!finished){
-                    System.out.println("You Win!");
-                    FinishMessage finishMess = new FinishMessage(myTime, controlledPlayerID);
-                    myClient.send(finishMess);
-                    finished = true;
+                if(lap == 1){
+                    if(!finished){
+                        System.out.println("You Win!");
+                        FinishMessage finishMess = new FinishMessage(myTime, controlledPlayerID);
+                        myClient.send(finishMess);
+                        finished = true;
+                    }
                 }
+    //            if(ResetTime == 15){
+    //                ResetLoc = player.getPhysicsLocation();
+    //                ResetTime = 0;
+    //            }else{
+    //                ResetTime += 1;
+    //            }
             }
-//            if(ResetTime == 15){
-//                ResetLoc = player.getPhysicsLocation();
-//                ResetTime = 0;
-//            }else{
-//                ResetTime += 1;
-//            }
         }
 
     }
