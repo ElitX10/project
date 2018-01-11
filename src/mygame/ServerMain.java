@@ -41,7 +41,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     private Truck truck;
     private float lowUpdateTimer = 0;
     private float hightUpdateTimer = 0;
-    private float lowUpdateTimerMax = 1;
+    private float lowUpdateTimerMax = 0.40f;
     private float hightUpdateTimerMax = 0.15f;
     private float pauseTime = 15;
     

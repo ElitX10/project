@@ -50,6 +50,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     DecimalFormat df = new DecimalFormat("0.0 s");
     private float myTime = 0;
     private BitmapText timeHUD;
+    private BitmapText results; 
     //app state : 
     private ArrayList<Player> playerStore = new ArrayList<Player>();
     private Truck truck; 
@@ -155,6 +156,9 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         setPauseOnLostFocus(false);
         
         finished = false;
+        
+        results = new BitmapText(guiFont);
+        results.setName("result");
     }
 
     @Override
@@ -190,6 +194,17 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                         FinishMessage finishMess = new FinishMessage(myTime, controlledPlayerID);
                         myClient.send(finishMess);
                         finished = true;
+                        
+                        // stop the car :
+                        playerStore.get(controlledPlayerID).steer(0);
+                        playerStore.get(controlledPlayerID).brake(30f);
+                        playerStore.get(controlledPlayerID).accelerate(0);
+                        CarParameterMessage carParameter = new CarParameterMessage(0, 0, 30f, false, false, false, controlledPlayerID);
+                        myClient.send(carParameter);
+                        setupKeys(false);
+                        playerStore.get(controlledPlayerID).stopAccelerationSoundNode();
+                        playerStore.get(controlledPlayerID).stopStartSoundNode();
+                        playerStore.get(controlledPlayerID).stopStopSoundNode();
                     }
                 }
     //            if(ResetTime == 15){
@@ -299,6 +314,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                                     newPlayer = new Player(ClientMain.this, NODE_GAME, bulletAppState, true);
                                     myRace.setEnabled(true);
                                     guiNode.detachChildNamed(waitMessage.getName());
+                                    guiNode.detachChildNamed(results.getName());
                                     setupKeys(true);
                                     controlledPlayerID = i;
                                 }else{
@@ -311,8 +327,13 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                         }else {
                             for (int i = 0; i < X.length ; i++){
                                 Vector3f playerLocation = playerStore.get(i).getPosition();
-                                if(Math.abs(playerLocation.x - X[i]) > 1.5f || Math.abs(playerLocation.y - Y[i]) > 1.5f || Math.abs(playerLocation.z - Z[i]) > 1.5f){
-                                    playerStore.get(i).setPosition(X[i], Y[i], Z[i]);
+                                float a = 0.5f;
+                                if(Math.abs(playerLocation.x - X[i]) > 0.5f || Math.abs(playerLocation.y - Y[i]) > 0.5f || Math.abs(playerLocation.z - Z[i]) > 0.5f){
+                                    if (playerStore.get(i).getCurrentVehicleSpeedKmHour() <= 0.2f && playerStore.get(i).getCurrentVehicleSpeedKmHour() >= -0.2f){
+                                        playerStore.get(i).setPosition(X[i], Y[i], Z[i]);
+                                    }else{
+                                        playerStore.get(i).setPosition(X[i] + a * (playerLocation.x - X[i]), Y[i] + a * (playerLocation.y - Y[i]), Z[i] + a * (playerLocation.z - Z[i]));
+                                    }                                    
                                     playerStore.get(i).setRotation(new Matrix3f(rot[i][0], rot[i][1], rot[i][2],
                                                                                 rot[i][3], rot[i][4], rot[i][5], 
                                                                                 rot[i][6], rot[i][7], rot[i][8]));
@@ -352,13 +373,11 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
             Future result = ClientMain.this.enqueue(new Callable() {
                @Override
                public Object call() throws Exception{
-                    BitmapText results = new BitmapText(guiFont);
                     results.setSize(guiFont.getCharSet().getRenderedSize() * 2);
                     results.setColor(ColorRGBA.Blue);
                     results.setText("You got position " + raceResults.getResults(controlledPlayerID));
-                    results.setLocalTranslation(settings.getWidth() / 2 - waitMessage.getLineWidth() / 2, settings.getHeight() / 2 , 0);
+                    results.setLocalTranslation(settings.getWidth() / 2 - results.getLineWidth() / 2, settings.getHeight() / 2 - 2 * results.getLineHeight(), 0);
                     guiNode.attachChild(results);
-                   
                    return true;
                }
             });

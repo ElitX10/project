@@ -451,7 +451,7 @@ class Player extends BaseAppState{
         float stiffness = 120.0f;//200=f1 car
         float compValue = 0.2f; //(lower than damp!)
         float dampValue = 0.3f;
-        final float mass = 400;
+        final float mass = 500;
         
         //Load model and get chassis Geometry
         carNode = (Node)myApp.getAssetManager().loadModel("Models/Ferrari/Car.scene");
