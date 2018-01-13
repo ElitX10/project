@@ -273,7 +273,7 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                 Future result = ClientMain.this.enqueue(new Callable() {
                     @Override
                     public Object call() throws Exception {
-                        if (!playerStore.isEmpty()){
+                        if (!playerStore.isEmpty() && myRace.getTime() < 1){
                             playerStore.get(carParamaterMess.getID()).accelerate(carParamaterMess.getAcceleration());
                             playerStore.get(carParamaterMess.getID()).brake(carParamaterMess.getBrake());
                             playerStore.get(carParamaterMess.getID()).steer(carParamaterMess.getSteer());
@@ -329,8 +329,9 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                                 Vector3f playerLocation = playerStore.get(i).getPosition();
                                 float a = 0.5f;
                                 if(Math.abs(playerLocation.x - X[i]) > 0.5f || Math.abs(playerLocation.y - Y[i]) > 0.5f || Math.abs(playerLocation.z - Z[i]) > 0.5f){
-                                    if (playerStore.get(i).getCurrentVehicleSpeedKmHour() <= 0.2f && playerStore.get(i).getCurrentVehicleSpeedKmHour() >= -0.2f){
+                                    if (!playerStore.get(i).getState()){
                                         playerStore.get(i).setPosition(X[i], Y[i], Z[i]);
+                                        playerStore.get(i).initPlayer();
                                     }else{
                                         playerStore.get(i).setPosition(X[i] + a * (playerLocation.x - X[i]), Y[i] + a * (playerLocation.y - Y[i]), Z[i] + a * (playerLocation.z - Z[i]));
                                     }                                    

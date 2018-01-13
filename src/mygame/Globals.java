@@ -371,6 +371,7 @@ class Player extends BaseAppState{
     private boolean isConnected = true;
     private final boolean isControlled;
     private AudioNode engineNoiseNode;
+    private boolean isInit = false;
     
     public Player(SimpleApplication app, Node gameNode, BulletAppState bulletAppState, boolean control){
         myApp = app;
@@ -566,6 +567,14 @@ class Player extends BaseAppState{
         return null;
     }
     
+    public boolean getState(){
+        return isInit;
+    }
+    
+    public void initPlayer(){
+        isInit = true;
+    }
+    
     private PhysicsSpace getPhysicsSpace() {
         return myBulletAppState.getPhysicsSpace();
     }
@@ -675,7 +684,7 @@ class Truck extends BaseAppState{
 //    private double distance;
 //    private float timeToNextStep;
     private final Random myRand = new Random();
-    private final int randomTimerDelay = myRand.nextInt((60 - 10) + 1) + 10; //myRand.nextInt((60 - 25) + 1) + 25
+    private int randomTimerDelay = myRand.nextInt((60 - 10) + 1) + 10; //myRand.nextInt((60 - 25) + 1) + 25
     private float randomTimer = 0;
 //    private boolean move = false;
     private final BulletAppState myBulletAppState;
@@ -711,11 +720,11 @@ class Truck extends BaseAppState{
                 Server myServer = serverApp.getMyServer();
                 RandomEventMessage triggerMess = new RandomEventMessage();
                 myServer.broadcast(triggerMess);
-                // TODO : broadcast message to clients !!!
                 for (int i = 0; i < rigidOilDrum.length; i++) {
                     rigidOilDrum[i].setLinearVelocity(new Vector3f(0, 0, -5));
                 }
                 drumOnTheTruck = false;
+                randomTimerDelay = myRand.nextInt((60 - 10) + 1) + 10;
             }
         }
     }
@@ -733,6 +742,7 @@ class Truck extends BaseAppState{
                                                             0, 1, 0, 
                                                             -1, 0, 0));
         }
+        drumOnTheTruck = true;
     }        
 
     @Override
