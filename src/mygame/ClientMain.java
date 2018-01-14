@@ -8,6 +8,8 @@ package mygame;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
+import com.jme3.audio.AudioData.DataType;
+import com.jme3.audio.AudioNode;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.VehicleControl;
 import com.jme3.font.BitmapText;
@@ -159,6 +161,14 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
         
         results = new BitmapText(guiFont);
         results.setName("result");
+        
+        // nature sound :
+        AudioNode audio_nature = new AudioNode(assetManager, "Sound/Environment/Nature.ogg", true);
+        audio_nature.setPositional(false);
+        audio_nature.setLooping(true);
+        audio_nature.setVolume(0.5f);
+        rootNode.attachChild(audio_nature);
+        audio_nature.play();
     }
 
     @Override
