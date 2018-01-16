@@ -425,13 +425,13 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
                 inputManager.addMapping("Rights", new KeyTrigger(KeyInput.KEY_K));
                 inputManager.addMapping("Ups", new KeyTrigger(KeyInput.KEY_U));
                 inputManager.addMapping("Downs", new KeyTrigger(KeyInput.KEY_J));
-                inputManager.addMapping("Reset", new KeyTrigger(KeyInput.KEY_RETURN));
+                //inputManager.addMapping("Reset", new KeyTrigger(KeyInput.KEY_RETURN));
             }    
                 inputManager.addListener(actionListener, "Lefts");
                 inputManager.addListener(actionListener, "Rights");
                 inputManager.addListener(actionListener, "Ups");
                 inputManager.addListener(actionListener, "Downs");
-                inputManager.addListener(actionListener, "Reset");  
+                //inputManager.addListener(actionListener, "Reset");  
         }else{
             // unable key input :
             inputManager.removeListener(actionListener);             
