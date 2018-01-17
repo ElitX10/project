@@ -223,6 +223,13 @@ public class ClientMain extends SimpleApplication implements ClientStateListener
     //            }else{
     //                ResetTime += 1;
     //            }
+            }else{
+                lap = 0;
+                finished = false;
+                //for testing
+                //nextCheckpoint = 0;
+                //checkpointNode.attachChild(checkpoint1);
+                
             }
         }
 

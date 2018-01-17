@@ -43,7 +43,7 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
     private float hightUpdateTimer = 0;
     private float lowUpdateTimerMax = 0.40f;
     private float hightUpdateTimerMax = 0.15f;
-    private float pauseTime = 15;
+    private float pauseTime = 10;
     
     // initial position for player :
     private final int X_Tab[] = {110, 110, 126, 126};
@@ -109,6 +109,11 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
                     pauseTime = 10;
                     myRace.setEnabled(true);        
                     truck.setEnabled(true);
+                }
+            }
+            if(!winnerList.isEmpty()){
+                for(int i = 0; i < winnerList.size(); i++){
+                    winnerList.remove(i);
                 }
             }
         }  
@@ -210,9 +215,10 @@ public class ServerMain extends SimpleApplication implements ConnectionListener{
                             int[] raceResults = new int[winnerList.size()];
                             for(int i = 0; i < winnerList.size(); i++){
                                 raceResults[i] = winnerList.get(i);
-                                ResultMessage resultMess = new ResultMessage(raceResults);
-                                myServer.broadcast(resultMess);
                             }
+                            ResultMessage resultMess = new ResultMessage(raceResults);
+                            myServer.broadcast(resultMess);
+                            myRace.setTimeWhenEnd();
                         }
                         return true;
                     }
@@ -342,5 +348,9 @@ class Race extends BaseAppState{
     
     public float getTime(){
         return currentTime;
+    }
+    
+    public void setTimeWhenEnd(){
+        currentTime = 3;
     }
 }
